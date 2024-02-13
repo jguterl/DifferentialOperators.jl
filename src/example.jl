@@ -14,8 +14,8 @@ B = VectorField(grid);
 
 nx, ny = size(grid)
 #a wrapper for testing (f is the operator we are interested in)
-test!(f::F, result) where {F<:VectorField} = compute!(f, grid_data, result, 3:nx-3, 3:ny-2)
-test_threads!(f::F, result) where {F<:VectorField} = compute_threads!(f, grid_data, result, 3:nx-3, 3:ny-2)
+test!(f, result)  = compute!(f, grid_data, result, 3:nx-3, 3:ny-2)
+test_threads!(f, result)  = compute_threads!(f, grid_data, result, 3:nx-3, 3:ny-2)
 #Let's do a series of test 
 # First a simple product scalar times B
 η = 10.0;
@@ -38,8 +38,6 @@ f4 = ∇ × (η × (∇ × B))
 r4 = VectorField(grid)
 @btime test!($f4, $r4)
 
-
-
 # We can also compose at will
 f4 = ∇ × (f3)
 r4 = VectorField(grid)
@@ -53,6 +51,10 @@ r4 = VectorField(grid)
 f5 = ∇(B)
 r5 = VectorField(grid)
 @btime test!($f5, $r5)
+
+f6 = ∇⋅(B)
+r6 = ScalarField(grid)
+@btime test!($f6, $r6)
 # the final call to the operator is inline and can be adjusted. It requires data for differentiation.
 # This can be dispatched to setup different order of differentation 
 
