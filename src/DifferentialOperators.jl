@@ -105,7 +105,7 @@ function compute_turbo!(op::VectorField{X,Y,Z}, grid_data::AbstractGridDerivativ
     nothing
 end
 
-function compute_turbo!(op::VectorField{X,Y,Z}, grid_data::AbstractGridDerivatives, v::VectorField, i_::UnitRange{Int64}, j_::UnitRange{Int64}) where {X,Y,Z}
+function compute_threads!(op::VectorField{X,Y,Z}, grid_data::AbstractGridDerivatives, v::VectorField, i_::UnitRange{Int64}, j_::UnitRange{Int64}) where {X,Y,Z}
     Threads.@threads for j in j_
                             for i in i_
                                 @inbounds begin
@@ -118,15 +118,8 @@ function compute_turbo!(op::VectorField{X,Y,Z}, grid_data::AbstractGridDerivativ
     nothing
 end
 
-function compute_fuse!(op::VectorField{X,Y,Z}, grid_data::AbstractGridDerivatives, v::VectorField, i_::UnitRange{Int64}, j_::UnitRange{Int64}) where {X,Y,Z}
-                i_ = IndexRange{1}(i_)
-                j_ = IndexRange{1}(j_)
-                v.x[i_, j_] .= op.x(grid_data, i_, j_) # note: possible to completely fuse that loop as well but derivative at boundaries need to be handle properly
-                v.y[i_, j_] .= op.y(grid_data, i_, j_)
-                v.z[i_, j_] .= op.z(grid_data, i_, j_)
-    nothing
-end
-export compute!, compute_turbo!,compute_fuse!,compute_threads!
+
+export compute!, compute_turbo!,compute_threads!
 
 function (op::VectorField{X,Y,Z})(grid_data::AbstractGridDerivatives, v::VectorField,  i::Int64, j::Int64)  where {X,Y,Z}
     v.x[i, j] = op.x(grid_data, i, j)

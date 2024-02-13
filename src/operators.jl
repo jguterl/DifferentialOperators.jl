@@ -28,6 +28,9 @@ struct LaplacienOperator <: Operator end
 ∂z(v::FieldData, grid_data::AbstractGridDerivatives, i::Int64, j::Int64) = 0
 
 
+∂x(op::ApplyOperator, grid_data::AbstractGridDerivatives, i::Int64, j::Int64) = (op(grid_data, i + 1, j) - op(grid_data, i, j)) / grid_data.dx(i, j)
+∂y(op::ApplyOperator, grid_data::AbstractGridDerivatives, i::Int64, j::Int64) = (op(grid_data, i, j + 1) - op(grid_data, i, j)) / grid_data.dy(i, j)
+∂z(op::ApplyOperator, grid_data::AbstractGridDerivatives, i::Int64, j::Int64) = 0.0
 
 
 abstract type AbstractOperator{D,V,O<:Operator} end 

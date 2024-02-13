@@ -38,11 +38,17 @@ f4 = ∇ × (η × (∇ × B))
 r4 = VectorField(grid)
 @btime test!($f4, $r4)
 
-# Finally something useful...
+
+
+# We can also compose at will
+f4 = ∇ × (f3)
+r4 = VectorField(grid)
+@btime test!($f4, $r4)
+
+# Some acceleration...
 f4 = ∇ × (η × (∇ × B))
 r4 = VectorField(grid)
 @btime test_threads!($f4, $r4)
-
 #let's also do a gradient for fun
 f5 = ∇(B)
 r5 = VectorField(grid)
