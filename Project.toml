@@ -3,6 +3,9 @@ uuid = "cd4ded31-5066-4bda-83c1-0f9333cc46c2"
 authors = ["Jerome Guterl"]
 version = "1.0.0-DEV"
 
+[deps]
+LoopVectorization = "bdcacae8-1622-11e9-2a5c-532679323890"
+
 [compat]
 julia = "1"
 

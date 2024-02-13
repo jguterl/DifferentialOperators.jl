@@ -42,11 +42,3 @@ function GridDerivatives(grid::Grid; Kx=1, Ky=1, Kz=1)
     dz = missing
     GridDerivatives(GridData(dx), GridData(dy), GridData(dz))
 end
-
-∂x(v::FieldData, grid_data::GridDerivatives, i::Int64, j::Int64) = (v( i + 1, j) - v( i, j))# / grid_data.dx(i, j)
-∂y(v::FieldData, grid_data::GridDerivatives, i::Int64, j::Int64) = (v(i, j+1) - v(i, j)) #/ grid_data.dy(i, j)
-∂z(v::FieldData, grid_data::GridDerivatives, i::Int64, j::Int64) = 0
-∂x(op::ApplyOperator, grid_data::GridDerivatives, i::Int64, j::Int64) = (op(grid_data, i + 1, j) - op(grid_data,i, j)) / grid_data.dx(i, j)
-∂y(op::ApplyOperator, grid_data::GridDerivatives, i::Int64,j::Int64) = (op(grid_data, i, j+1) - op(grid_data, i, j)) / grid_data.dy(i, j)
-∂z(op::ApplyOperator, grid_data::GridDerivatives, i::Int64,j::Int64) = 0.0
-

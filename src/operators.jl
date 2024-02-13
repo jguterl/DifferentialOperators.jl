@@ -10,7 +10,7 @@ struct LaplacienOperator <: Operator end
 #curl
 (op::ApplyOperator{D,V,CurlOperator,XComponent})(args...) where {D,V} = (∂y(op.var.z, args...) - ∂z(op.var.y, args...))
 (op::ApplyOperator{D,V,CurlOperator,YComponent})(args...) where {D,V} = (∂x(op.var.z, args...) - ∂z(op.var.x, args...))
-(op::ApplyOperator{D,V,CurlOperator,ZComponent})(args...) where {D,V} = (∂x(op.var.z, args...) - ∂z(op.var.x, args...))
+(op::ApplyOperator{D,V,CurlOperator,ZComponent})(args...) where {D,V} = (∂x(op.var.y, args...) - ∂y(op.var.x, args...))
 
 #gradient
 (op::ApplyOperator{D,V,GradientOperator,XComponent})(args...) where {D,V} = ∂x(op.var.x, args...)
@@ -18,19 +18,18 @@ struct LaplacienOperator <: Operator end
 (op::ApplyOperator{D,V,GradientOperator,ZComponent})(args...) where {D,V} = ∂z(op.var.z, args...)
 
 #laplacien
-(op::ApplyOperator{D,V,LaplacienOperator,XComponent})(args...) where {D,V} = ∂x²(op.var.x, args...) + ∂y²(app.x, args...) + ∂z²(app.x, args...)
-(op::ApplyOperator{D,V,LaplacienOperator,YComponent})(args...) where {D,V} = ∂x²(op.var.y, args...) + ∂y²(app.y, args...) + ∂z²(app.y, args...)
-(op::ApplyOperator{D,V,LaplacienOperator,ZComponent})(args...) where {D,V} = ∂x²(op.var.z, args...) + ∂y²(app.z, args...) + ∂z²(app.z, args...)
+(op::ApplyOperator{D,V,LaplacienOperator,XComponent})(args...) where {D,V} = ∂x²(op.var.x, args...) + ∂y²(op.var.x, args...) + ∂z²(op.var.x, args...)
+(op::ApplyOperator{D,V,LaplacienOperator,YComponent})(args...) where {D,V} = ∂x²(op.var.y, args...) + ∂y²(op.var.y, args...) + ∂z²(op.var.y, args...)
+(op::ApplyOperator{D,V,LaplacienOperator,ZComponent})(args...) where {D,V} = ∂x²(op.var.z, args...) + ∂y²(op.var.z, args...) + ∂z²(op.var.z, args...)
 
-#vector field
-#(op::VectorField)(args...) where {D,V} = ∂x²(app.x, args...) + ∂y²(app.x, args...) + ∂z²(app.x, args...)
-# (op::ApplyOperator{LaplacienOperator,D,V,YComponent})(args...) where {D,V} = ∂x²(app.y, args...) + ∂y²(app.y, args...) + ∂z²(app.y, args...)
-# (op::ApplyOperator{LaplacienOperator,D,V,ZComponent})(args...) where {D,V} = ∂x²(app.z, args...) + ∂y²(app.z, args...) + ∂z²(app.z, args...)
+# TODO: dispatch on derivative accuracy orders
+∂x(v::FieldData, grid_data::AbstractGridDerivatives, i::Int64, j::Int64) = (v(i + 1, j) - v(i, j)) / grid_data.dx(i, j)
+∂y(v::FieldData, grid_data::AbstractGridDerivatives, i::Int64, j::Int64) = (v(i, j + 1) - v(i, j)) / grid_data.dy(i, j)
+∂z(v::FieldData, grid_data::AbstractGridDerivatives, i::Int64, j::Int64) = 0
 
-# op_x(var::VectorField, args...) = var.x(args...)
-# op_y(var::VectorField, args...) = var.y(args...)
-# op_z(var::VectorField, args...) = var.z(args...)
-# User-frontend operator definition 
+
+
+
 abstract type AbstractOperator{D,V,O<:Operator} end 
 Curl{D,V} = AbstractOperator{D,V,CurlOperator}
 Gradient{D,V} = AbstractOperator{D,V,GradientOperator}
@@ -41,12 +40,9 @@ Product{D,V} = AbstractOperator{D,V,ProductOperator}
 Curl(v) = Curl(nothing, v)
 Curl(d, v) = VectorField(d, v, CurlOperator())
 
-# AbstractOperator{D,V,O}(v) where {D,V,O} = AbstractOperator{D,V,O}(nothing,v)
-# AbstractOperator{D,V,O}(d, v) where {D,V,O} = AbstractOperator{D,V,O}(d, v, O())
-VectorField(d, v, o::Operator) = VectorField(ApplyOperatorX(d, v, o), ApplyOperatorY(d, v, o), ApplyOperatorZ(d, v, o))
-
-#(Applicator{D,V,O})(v) where {D,V,O} = Applicator{D,V,O}(nothing, var, CurlOperator())
-×(s::Type{∇}, v::VectorField) = Curl(v)
+×(::Type{∇}, v::VectorField) = Curl(v)
 ×(s::Float64, var::VectorField) = VectorField(s, var, ProductOperator())
+
+VectorField(d, v, o::Operator) = VectorField(ApplyOperatorX(d, v, o), ApplyOperatorY(d, v, o), ApplyOperatorZ(d, v, o))
 
 export ∇, ×

@@ -1,4 +1,5 @@
 module DifferentialOperators
+using LoopVectorization
 abstract type AbstractGrid end 
 abstract type AbstractGridDerivatives end 
 
@@ -11,20 +12,23 @@ struct GridData{T} <: AbstractGridData{T}
     data::T
 end
 
-(dx::GridData)(i::Int64, j::Int64) = dx.data[i, j]
+
+
+
 struct FieldData{T} <: AbstractFieldData{T}
     data::T
 end
+
 # accesssor
-(g::GridData)(i::Int64, j::Int64)= g.data[i, j]
+(d::GridData)(i, j) = d.data[i, j]
+
 (d::FieldData{T})(grid_data::AbstractGridDerivatives,i, j) where T = d.data[i, j]
 (d::FieldData{T})(i, j) where {T} = d.data[i, j]
-(g::GridData{T})(i) where T<:Array{1}= g.data[i, j]
-(d::FieldData{T})(i) where T<:Array{1} = d.data[i, j]
+
 
 #generic setor (could add typing if concern with dimension compability) 
 Base.setindex!(f::FieldData, args...) = setindex!(f.data, args...)
-
+Base.getindex(v::FieldData, args...) = getindex(v.data, args...)
 # we only consider 3 components because of curl 
 struct VectorField{X,Y,Z} <: AbstractVectorField
     x::X 
@@ -45,6 +49,7 @@ abstract type AbstractApplyOperator{O<:Operator} end
 struct XComponent <: AbstractComponent end
 struct YComponent <: AbstractComponent end
 struct ZComponent <: AbstractComponent end
+
 struct ApplyOperator{D,V,O<:Operator,C<:AbstractComponent} <: AbstractApplyOperator{O}
     data::D
     var::V
@@ -63,7 +68,7 @@ function compute!(op::VectorField{X,Y,Z},grid_data::AbstractGridDerivatives, v::
 end
 
 function compute!(op::VectorField{X,Y,Z}, grid_data::AbstractGridDerivatives, v::VectorField, i_::UnitRange{Int64}, j_::UnitRange{Int64}) where {X,Y,Z}
-    for j in j_
+    @inbounds for j in j_
         for i in i_
         v.x[i, j] = op.x(grid_data, i, j)
         v.y[i, j] = op.y(grid_data, i, j)
@@ -72,7 +77,56 @@ function compute!(op::VectorField{X,Y,Z}, grid_data::AbstractGridDerivatives, v:
     end
     nothing
 end
-export compute!
+function _compute!(vx,vy,vz,opx,opy, opz, grid_data, i, j)
+            vx[i, j] = opx(grid_data, i, j)
+            vy[i, j] = opy(grid_data, i, j)
+            vz[i, j] = opz(grid_data, i, j)
+end
+function compute_turbo!(op::VectorField{X,Y,Z}, grid_data::AbstractGridDerivatives, v::VectorField, i_::UnitRange{Int64}, j_::UnitRange{Int64}) where {X,Y,Z}
+    # @turbo 
+    for j in j_
+        for i in i_
+        _compute!(v.x,v.y,v.z,op.x,op.y, op.z, grid_data, i, j)
+    end
+end
+    nothing
+end
+
+function compute_turbo!(op::VectorField{X,Y,Z}, grid_data::AbstractGridDerivatives, v::VectorField, i_::UnitRange{Int64}, j_::UnitRange{Int64}) where {X,Y,Z}
+     for j in j_
+        for i in i_
+            @inbounds begin
+                v.x[i, j] = op.x(grid_data, i, j) # note: possible to completely fuse that loop as well but derivative at boundaries need to be handle properly
+                v.y[i, j] = op.y(grid_data, i, j)
+                v.z[i, j] = op.z(grid_data, i, j)
+            end
+        end
+    end
+    nothing
+end
+
+function compute_turbo!(op::VectorField{X,Y,Z}, grid_data::AbstractGridDerivatives, v::VectorField, i_::UnitRange{Int64}, j_::UnitRange{Int64}) where {X,Y,Z}
+    Threads.@threads for j in j_
+                            for i in i_
+                                @inbounds begin
+                                    v.x[i, j] = op.x(grid_data, i, j) # note: possible to completely fuse that loop as well but derivative at boundaries need to be handle properly
+                                    v.y[i, j] = op.y(grid_data, i, j)
+                                    v.z[i, j] = op.z(grid_data, i, j)
+                                end
+                            end
+    end
+    nothing
+end
+
+function compute_fuse!(op::VectorField{X,Y,Z}, grid_data::AbstractGridDerivatives, v::VectorField, i_::UnitRange{Int64}, j_::UnitRange{Int64}) where {X,Y,Z}
+                i_ = IndexRange{1}(i_)
+                j_ = IndexRange{1}(j_)
+                v.x[i_, j_] .= op.x(grid_data, i_, j_) # note: possible to completely fuse that loop as well but derivative at boundaries need to be handle properly
+                v.y[i_, j_] .= op.y(grid_data, i_, j_)
+                v.z[i_, j_] .= op.z(grid_data, i_, j_)
+    nothing
+end
+export compute!, compute_turbo!,compute_fuse!,compute_threads!
 
 function (op::VectorField{X,Y,Z})(grid_data::AbstractGridDerivatives, v::VectorField,  i::Int64, j::Int64)  where {X,Y,Z}
     v.x[i, j] = op.x(grid_data, i, j)
