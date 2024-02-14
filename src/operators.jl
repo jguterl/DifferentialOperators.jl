@@ -1,15 +1,28 @@
+#Product
+struct ProductOperator    <: Operator end
+
+#Centered operators
 struct CurlOperator       <: Operator end
 struct GradientOperator   <: Operator end
-struct Curl⁺Operator      <: Operator end
-struct Gradient⁺Operator  <: Operator end
-struct ProductOperator    <: Operator end
 struct LaplacienOperator  <: Operator end
 struct DivergenceOperator <: Operator end
+
+#Forward staggered
+struct Curl⁺Operator      <: Operator end
+struct Gradient⁺Operator  <: Operator end
+
+#Backward staggered
+struct Curl⁻Operator      <: Operator end
+struct Gradient⁻Operator  <: Operator end
 
 # multiply
 (op::ApplyOperator{D,V,ProductOperator,XComponent})(args...) where {D<:Float64,V} = op.var.x(args...) * op.data
 (op::ApplyOperator{D,V,ProductOperator,YComponent})(args...) where {D<:Float64,V} = op.var.y(args...) * op.data
 (op::ApplyOperator{D,V,ProductOperator,ZComponent})(args...) where {D<:Float64,V} = op.var.z(args...) * op.data
+
+#
+# Centered operators
+#
 
 #curl
 (op::ApplyOperator{D,V,CurlOperator,XComponent})(args...) where {D,V} = (∂y(op.var.z, args...) - ∂z(op.var.y, args...))
@@ -21,6 +34,10 @@ struct DivergenceOperator <: Operator end
 (op::ApplyOperator{D,V,GradientOperator,YComponent})(args...) where {D,V} = ∂y(op.var.y, args...)
 (op::ApplyOperator{D,V,GradientOperator,ZComponent})(args...) where {D,V} = ∂z(op.var.z, args...)
 
+#
+# Forward staggered
+#
+
 #curl+
 (op::ApplyOperator{D,V,Curl⁺Operator,XComponent})(args...) where {D,V} = (∂y⁺(op.var.z, args...) - ∂z⁺(op.var.y, args...))
 (op::ApplyOperator{D,V,Curl⁺Operator,YComponent})(args...) where {D,V} = (∂z⁺(op.var.x, args...) - ∂x⁺(op.var.z, args...))
@@ -30,6 +47,24 @@ struct DivergenceOperator <: Operator end
 (op::ApplyOperator{D,V,Gradient⁺Operator,XComponent})(args...) where {D,V} = ∂x⁺(op.var.x, args...)
 (op::ApplyOperator{D,V,Gradient⁺Operator,YComponent})(args...) where {D,V} = ∂y⁺(op.var.y, args...)
 (op::ApplyOperator{D,V,Gradient⁺Operator,ZComponent})(args...) where {D,V} = ∂z⁺(op.var.z, args...)
+
+#
+# Backward staggered
+#
+
+#curl-
+(op::ApplyOperator{D,V,Curl⁻Operator,XComponent})(args...) where {D,V} = (∂y⁻(op.var.z, args...) - ∂z⁻(op.var.y, args...))
+(op::ApplyOperator{D,V,Curl⁻Operator,YComponent})(args...) where {D,V} = (∂z⁻(op.var.x, args...) - ∂x⁻(op.var.z, args...))
+(op::ApplyOperator{D,V,Curl⁻Operator,ZComponent})(args...) where {D,V} = (∂x⁻(op.var.y, args...) - ∂y⁻(op.var.x, args...))
+
+#gradient- --- warning, this should work for scalars, what does op.var contain?? Right now this is like diag( grad( V ) )
+(op::ApplyOperator{D,V,Gradient⁻Operator,XComponent})(args...) where {D,V} = ∂x⁻(op.var.x, args...)
+(op::ApplyOperator{D,V,Gradient⁻Operator,YComponent})(args...) where {D,V} = ∂y⁻(op.var.y, args...)
+(op::ApplyOperator{D,V,Gradient⁻Operator,ZComponent})(args...) where {D,V} = ∂z⁻(op.var.z, args...)
+
+#
+# Laplacian and divergence
+#
 
 #laplacien --- TODO: eventually this should overloaded as psi = div-( grad+( phi ) or A = - curl-( curl+ ( B ) + grad-(div+( B ) )
 (op::ApplyOperator{D,V,LaplacienOperator,XComponent})(args...) where {D,V} = ∂x²(op.var.x, args...) + ∂y²(op.var.x, args...) + ∂z²(op.var.x, args...)
@@ -84,20 +119,30 @@ Curl(d, v)        = VectorField(d, v, CurlOperator())
 Curl⁺{D,V}         = AbstractOperator{D,V,Curl⁺Operator}
 Gradient⁺{D,V}     = AbstractOperator{D,V,Gradient⁺Operator}
 ∇⁺{D,V}            = AbstractOperator{D,V,Gradient⁺Operator}
-∇⁺(v::VectorField) = VectorField(nothing, v, GradientOperator())
+∇⁺(v::VectorField) = VectorField(nothing, v, Gradient⁺Operator())
 
 Curl⁺(v)           = Curl⁺(nothing, v)
 Curl⁺(d, v)        = VectorField(d, v, Curl⁺Operator())
 
+#Backward stagged operators
+Curl⁻{D,V}         = AbstractOperator{D,V,Curl⁻Operator}
+Gradient⁻{D,V}     = AbstractOperator{D,V,Gradient⁻Operator}
+∇⁻{D,V}            = AbstractOperator{D,V,Gradient⁻Operator}
+∇⁻(v::VectorField) = VectorField(nothing, v, Gradient⁻Operator())
+
+Curl⁻(v)           = Curl⁻(nothing, v)
+Curl⁻(d, v)        = VectorField(d, v, Curl⁻Operator())
+
 Product{D,V}  = AbstractOperator{D,V,ProductOperator}
 
 
-×( ::Type{∇⁺}, v ::VectorField) = Curl⁺(v)
 ×( ::Type{∇} , v ::VectorField) = Curl(v)
+×( ::Type{∇⁺}, v ::VectorField) = Curl⁺(v)
+×( ::Type{∇⁻}, v ::VectorField) = Curl⁻(v)
 ×(s::Float64, var::VectorField) = VectorField(s, var, ProductOperator())
 ⋅( ::Type{∇}, var::VectorField) = ScalarField(nothing, var, DivergenceOperator())
 
 VectorField(d, v, o::Operator)  = VectorField(ApplyOperatorX(d, v, o), ApplyOperatorY(d, v, o), ApplyOperatorZ(d, v, o))
 ScalarField(d, v, o::Operator)  = ScalarField(ApplyOperatorScalar(d, v, o))
 
-export ∇, ∇⁺, ×, ⋅
+export ∇, ∇⁺, ∇⁻, ×, ⋅

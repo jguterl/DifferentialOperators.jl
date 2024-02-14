@@ -42,9 +42,9 @@ print("Test η×∇×B\n")
 @btime test!($f3, $r3)
 
 # Finally something useful...
-f4 = ∇ × (η × (∇ × B))
+f4 = ∇⁻ × (η × (∇⁺ × B))
 r4 = VectorField(grid)
-print("Test ∇×η×∇×B\n")
+print("Test ∇⁻×η×∇⁺×B\n")
 @btime test!($f4, $r4)
 
 # We can also compose at will
