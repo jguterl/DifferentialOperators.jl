@@ -24,32 +24,40 @@ struct Gradient⁻Operator  <: Operator end
 # Centered operators
 #
 
-#curl
+#curl --- vector into vector
 (op::ApplyOperator{D,V,CurlOperator,XComponent})(args...) where {D,V} = (∂y(op.var.z, args...) - ∂z(op.var.y, args...))
 (op::ApplyOperator{D,V,CurlOperator,YComponent})(args...) where {D,V} = (∂z(op.var.x, args...) - ∂x(op.var.z, args...))
 (op::ApplyOperator{D,V,CurlOperator,ZComponent})(args...) where {D,V} = (∂x(op.var.y, args...) - ∂y(op.var.x, args...))
 
-#gradient --- warning, this should work for scalars, what does op.var contain?? Right now this is like diag( grad( V ) )
+#gradient --- scalar into vector
 (op::ApplyOperator{D,V,GradientOperator,XComponent})(args...) where {D,V} = ∂x(op.var.field, args...)
 (op::ApplyOperator{D,V,GradientOperator,YComponent})(args...) where {D,V} = ∂y(op.var.field, args...)
 (op::ApplyOperator{D,V,GradientOperator,ZComponent})(args...) where {D,V} = ∂z(op.var.field, args...)
-#(op::ApplyOperator{D,V,GradientOperator,XComponent})(args...) where {D,V} = ∂x(op.var.x, args...)
-#(op::ApplyOperator{D,V,GradientOperator,YComponent})(args...) where {D,V} = ∂y(op.var.y, args...)
-#(op::ApplyOperator{D,V,GradientOperator,ZComponent})(args...) where {D,V} = ∂z(op.var.z, args...)
+# This looks like ( diag ( grad ( V ) ) )
+# (op::ApplyOperator{D,V,GradientOperator,XComponent})(args...) where {D,V} = ∂x(op.var.x, args...)
+# (op::ApplyOperator{D,V,GradientOperator,YComponent})(args...) where {D,V} = ∂y(op.var.y, args...)
+# (op::ApplyOperator{D,V,GradientOperator,ZComponent})(args...) where {D,V} = ∂z(op.var.z, args...)
+
+#divergence
+(op::ApplyOperator{D,V,DivergenceOperator,ScalarComponent})(args...) where {D,V} = ∂x(op.var.x, args...) + ∂y(op.var.y, args...) + ∂z(op.var.z, args...)
 
 #
 # Forward staggered
 #
 
-#curl+
+#curl+ --- vector into vector
 (op::ApplyOperator{D,V,Curl⁺Operator,XComponent})(args...) where {D,V} = (∂y⁺(op.var.z, args...) - ∂z⁺(op.var.y, args...))
 (op::ApplyOperator{D,V,Curl⁺Operator,YComponent})(args...) where {D,V} = (∂z⁺(op.var.x, args...) - ∂x⁺(op.var.z, args...))
 (op::ApplyOperator{D,V,Curl⁺Operator,ZComponent})(args...) where {D,V} = (∂x⁺(op.var.y, args...) - ∂y⁺(op.var.x, args...))
 
-#gradient+ --- warning, this should work for scalars, what does op.var contain?? Right now this is like diag( grad( V ) )
-(op::ApplyOperator{D,V,Gradient⁺Operator,XComponent})(args...) where {D,V} = ∂x⁺(op.var.x, args...)
-(op::ApplyOperator{D,V,Gradient⁺Operator,YComponent})(args...) where {D,V} = ∂y⁺(op.var.y, args...)
-(op::ApplyOperator{D,V,Gradient⁺Operator,ZComponent})(args...) where {D,V} = ∂z⁺(op.var.z, args...)
+# gradient+ --- scalar into vector
+(op::ApplyOperator{D,V,Gradient⁺Operator,XComponent})(args...) where {D,V} = ∂x⁺(op.var.field, args...)
+(op::ApplyOperator{D,V,Gradient⁺Operator,YComponent})(args...) where {D,V} = ∂y⁺(op.var.field, args...)
+(op::ApplyOperator{D,V,Gradient⁺Operator,ZComponent})(args...) where {D,V} = ∂z⁺(op.var.field, args...)
+# This looks like diag( grad( V ) )
+# (op::ApplyOperator{D,V,Gradient⁺Operator,XComponent})(args...) where {D,V} = ∂x⁺(op.var.x, args...)
+# (op::ApplyOperator{D,V,Gradient⁺Operator,YComponent})(args...) where {D,V} = ∂y⁺(op.var.y, args...)
+# (op::ApplyOperator{D,V,Gradient⁺Operator,ZComponent})(args...) where {D,V} = ∂z⁺(op.var.z, args...)
 
 #
 # Backward staggered
@@ -60,10 +68,14 @@ struct Gradient⁻Operator  <: Operator end
 (op::ApplyOperator{D,V,Curl⁻Operator,YComponent})(args...) where {D,V} = (∂z⁻(op.var.x, args...) - ∂x⁻(op.var.z, args...))
 (op::ApplyOperator{D,V,Curl⁻Operator,ZComponent})(args...) where {D,V} = (∂x⁻(op.var.y, args...) - ∂y⁻(op.var.x, args...))
 
-#gradient- --- warning, this should work for scalars, what does op.var contain?? Right now this is like diag( grad( V ) )
-(op::ApplyOperator{D,V,Gradient⁻Operator,XComponent})(args...) where {D,V} = ∂x⁻(op.var.x, args...)
-(op::ApplyOperator{D,V,Gradient⁻Operator,YComponent})(args...) where {D,V} = ∂y⁻(op.var.y, args...)
-(op::ApplyOperator{D,V,Gradient⁻Operator,ZComponent})(args...) where {D,V} = ∂z⁻(op.var.z, args...)
+#gradient-
+(op::ApplyOperator{D,V,Gradient⁻Operator,XComponent})(args...) where {D,V} = ∂x⁻(op.var.field, args...)
+(op::ApplyOperator{D,V,Gradient⁻Operator,YComponent})(args...) where {D,V} = ∂y⁻(op.var.field, args...)
+(op::ApplyOperator{D,V,Gradient⁻Operator,ZComponent})(args...) where {D,V} = ∂z⁻(op.var.field, args...)
+# This looks like diag( grad( V ) )
+#(op::ApplyOperator{D,V,Gradient⁻Operator,XComponent})(args...) where {D,V} = ∂x⁻(op.var.x, args...)
+#(op::ApplyOperator{D,V,Gradient⁻Operator,YComponent})(args...) where {D,V} = ∂y⁻(op.var.y, args...)
+#(op::ApplyOperator{D,V,Gradient⁻Operator,ZComponent})(args...) where {D,V} = ∂z⁻(op.var.z, args...)
 
 #
 # Laplacian and divergence
@@ -75,8 +87,6 @@ struct Gradient⁻Operator  <: Operator end
 (op::ApplyOperator{D,V,LaplacienOperator,YComponent})(args...) where {D,V} = ∂x²(op.var.y, args...) + ∂y²(op.var.y, args...) + ∂z²(op.var.y, args...)
 (op::ApplyOperator{D,V,LaplacienOperator,ZComponent})(args...) where {D,V} = ∂x²(op.var.z, args...) + ∂y²(op.var.z, args...) + ∂z²(op.var.z, args...)
 
-#divergence
-(op::ApplyOperator{D,V,DivergenceOperator,ScalarComponent})(args...) where {D,V} = ∂x(op.var.x, args...) + ∂y(op.var.y, args...) + ∂z(op.var.z, args...)
 
 # TODO: dispatch on derivative accuracy orders
 
@@ -114,7 +124,7 @@ Curl{D,V}         = AbstractOperator{D,V,CurlOperator}
 Gradient{D,V}     = AbstractOperator{D,V,GradientOperator}
 ∇{D,V}            = AbstractOperator{D,V,GradientOperator}
 ∇(v::ScalarField) = VectorField(nothing, v, GradientOperator())
-#∇(v::VectorField) = VectorField(nothing, v, GradientOperator())
+#∇(v::TensorVectorField) = VectorField(nothing, v, GradientOperator())
 
 
 Curl(v)           = Curl(nothing, v)
@@ -125,7 +135,8 @@ Curl(d, v)        = VectorField(d, v, CurlOperator())
 Curl⁺{D,V}         = AbstractOperator{D,V,Curl⁺Operator}
 Gradient⁺{D,V}     = AbstractOperator{D,V,Gradient⁺Operator}
 ∇⁺{D,V}            = AbstractOperator{D,V,Gradient⁺Operator}
-∇⁺(v::VectorField) = VectorField(nothing, v, Gradient⁺Operator())
+∇⁺(v::ScalarField) = VectorField(nothing, v, Gradient⁺Operator())
+#∇⁺(v::VectorField) = VectorField(nothing, v, Gradient⁺Operator())
 
 Curl⁺(v)           = Curl⁺(nothing, v)
 Curl⁺(d, v)        = VectorField(d, v, Curl⁺Operator())
@@ -134,7 +145,8 @@ Curl⁺(d, v)        = VectorField(d, v, Curl⁺Operator())
 Curl⁻{D,V}         = AbstractOperator{D,V,Curl⁻Operator}
 Gradient⁻{D,V}     = AbstractOperator{D,V,Gradient⁻Operator}
 ∇⁻{D,V}            = AbstractOperator{D,V,Gradient⁻Operator}
-∇⁻(v::VectorField) = VectorField(nothing, v, Gradient⁻Operator())
+∇⁻(v::ScalarField) = VectorField(nothing, v, Gradient⁻Operator())
+#∇⁻(v::VectorField) = VectorField(nothing, v, Gradient⁻Operator())
 
 Curl⁻(v)           = Curl⁻(nothing, v)
 Curl⁻(d, v)        = VectorField(d, v, Curl⁻Operator())
