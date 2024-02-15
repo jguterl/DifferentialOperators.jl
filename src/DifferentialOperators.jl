@@ -8,66 +8,18 @@ abstract type AbstractVectorField end
 abstract type AbstractScalarField end
 abstract type AbstractGridData{T} end
 abstract type AbstractFieldData{T} end
-
-struct GridData{T} <: AbstractGridData{T}
-    data::T
-end
-
-struct FieldData{T} <: AbstractFieldData{T}
-    data::T
-end
-
-# accesssor
-(d::GridData)(i, j) = d.data[i, j]
-
-(d::FieldData{T})(grid_data::AbstractGridDerivatives,i, j) where T = d.data[i, j]
-(d::FieldData{T})(i, j) where {T} = d.data[i, j]
-
-
-#generic setor (could add typing if concern with dimension compability) 
-Base.setindex!(f::FieldData, args...) = setindex!(f.data, args...)
-Base.getindex(v::FieldData, args...) = getindex(v.data, args...)
-
-#
-# Vector field structure
-#
-# we only consider 3 components because of curl 
-struct VectorField{X,Y,Z} <: AbstractVectorField
-    x::X 
-    y::Y 
-    z::Z 
-end
-
-#constructors
-VectorField(dims::NTuple{N,Int64}) where {N} = VectorField((FieldData(zeros(dims...)) for fn in fieldnames(VectorField))...);
-VectorField(n::Int64) = VectorField((n,))
-VectorField(nx::Int64, ny::Int64) = VectorField((nx,ny))
-VectorField(grid::AbstractGrid) = VectorField(size(grid))
-
-#
-# Scalar field structure
-#
-struct ScalarField{D} <: AbstractScalarField
-    field::D
-end
-
-#generic setor (could add typing if concern with dimension compability) 
-#ScalarField(dims::NTuple{N,Int64}) where {N} = ScalarField((zeros(dims...) for fn in fieldnames(ScalarField))...)
-ScalarField(dims::NTuple{N,Int64}) where {N} = ScalarField((FieldData(zeros(dims...)) for fn in fieldnames(ScalarField))...)
-ScalarField(n::Int64) = ScalarField((n,))
-ScalarField(nx::Int64, ny::Int64) = ScalarField((nx, ny))
-ScalarField(grid::AbstractGrid) = ScalarField(size(grid))
-
-
 abstract type Operator end
-
-
 abstract type AbstractComponent end
 abstract type AbstractApplyOperator{O<:Operator} end
 struct XComponent <: AbstractComponent end
 struct YComponent <: AbstractComponent end
 struct ZComponent <: AbstractComponent end
 struct ScalarComponent <: AbstractComponent end
+
+
+
+
+
 struct ApplyOperator{D,V,O<:Operator,C<:AbstractComponent} <: AbstractApplyOperator{O}
     data::D
     var::V
@@ -178,5 +130,6 @@ end
 
 include("operators.jl")
 include("grid.jl")
+include("derivatives.jl")
 export Grid, VectorField, GridDerivatives, ScalarField
 end
