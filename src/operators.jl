@@ -1,19 +1,21 @@
 #Product
-struct ProductOperator    <: Operator end
+struct ProductOperator     <: Operator end
 
 #Centered operators
-struct CurlOperator       <: Operator end
-struct GradientOperator   <: Operator end
-struct LaplacienOperator  <: Operator end
-struct DivergenceOperator <: Operator end
+struct CurlOperator        <: Operator end
+struct GradientOperator    <: Operator end
+struct DivergenceOperator  <: Operator end
+struct LaplacienOperator   <: Operator end
 
 #Forward staggered
-struct Curl⁺Operator      <: Operator end
-struct Gradient⁺Operator  <: Operator end
+struct Curl⁺Operator       <: Operator end
+struct Gradient⁺Operator   <: Operator end
+struct Divergence⁺Operator <: Operator end
 
 #Backward staggered
-struct Curl⁻Operator      <: Operator end
-struct Gradient⁻Operator  <: Operator end
+struct Curl⁻Operator       <: Operator end
+struct Gradient⁻Operator   <: Operator end
+struct Divergence⁻Operator <: Operator end
 
 # multiply
 (op::ApplyOperator{D,V,ProductOperator,XComponent})(args...) where {D<:Float64,V} = op.var.x(args...) * op.data
@@ -38,7 +40,7 @@ struct Gradient⁻Operator  <: Operator end
 # (op::ApplyOperator{D,V,GradientOperator,YComponent})(args...) where {D,V} = ∂y(op.var.y, args...)
 # (op::ApplyOperator{D,V,GradientOperator,ZComponent})(args...) where {D,V} = ∂z(op.var.z, args...)
 
-#divergence
+#divergence --- vector into scalar
 (op::ApplyOperator{D,V,DivergenceOperator,ScalarComponent})(args...) where {D,V} = ∂x(op.var.x, args...) + ∂y(op.var.y, args...) + ∂z(op.var.z, args...)
 
 #
@@ -59,6 +61,9 @@ struct Gradient⁻Operator  <: Operator end
 # (op::ApplyOperator{D,V,Gradient⁺Operator,YComponent})(args...) where {D,V} = ∂y⁺(op.var.y, args...)
 # (op::ApplyOperator{D,V,Gradient⁺Operator,ZComponent})(args...) where {D,V} = ∂z⁺(op.var.z, args...)
 
+#divergence --- vector into scalar
+(op::ApplyOperator{D,V,Divergence⁺Operator,ScalarComponent})(args...) where {D,V} = ∂x⁺(op.var.x, args...) + ∂y⁺(op.var.y, args...) + ∂z⁺(op.var.z, args...)
+
 #
 # Backward staggered
 #
@@ -76,6 +81,10 @@ struct Gradient⁻Operator  <: Operator end
 #(op::ApplyOperator{D,V,Gradient⁻Operator,XComponent})(args...) where {D,V} = ∂x⁻(op.var.x, args...)
 #(op::ApplyOperator{D,V,Gradient⁻Operator,YComponent})(args...) where {D,V} = ∂y⁻(op.var.y, args...)
 #(op::ApplyOperator{D,V,Gradient⁻Operator,ZComponent})(args...) where {D,V} = ∂z⁻(op.var.z, args...)
+
+#divergence --- vector into scalar
+(op::ApplyOperator{D,V,Divergence⁻Operator,ScalarComponent})(args...) where {D,V} = ∂x⁻(op.var.x, args...) + ∂y⁻(op.var.y, args...) + ∂z⁻(op.var.z, args...)
+
 
 #
 # Laplacian and divergence
@@ -136,7 +145,6 @@ Curl⁺{D,V}         = AbstractOperator{D,V,Curl⁺Operator}
 Gradient⁺{D,V}     = AbstractOperator{D,V,Gradient⁺Operator}
 ∇⁺{D,V}            = AbstractOperator{D,V,Gradient⁺Operator}
 ∇⁺(v::ScalarField) = VectorField(nothing, v, Gradient⁺Operator())
-#∇⁺(v::VectorField) = VectorField(nothing, v, Gradient⁺Operator())
 
 Curl⁺(v)           = Curl⁺(nothing, v)
 Curl⁺(d, v)        = VectorField(d, v, Curl⁺Operator())
@@ -146,7 +154,6 @@ Curl⁻{D,V}         = AbstractOperator{D,V,Curl⁻Operator}
 Gradient⁻{D,V}     = AbstractOperator{D,V,Gradient⁻Operator}
 ∇⁻{D,V}            = AbstractOperator{D,V,Gradient⁻Operator}
 ∇⁻(v::ScalarField) = VectorField(nothing, v, Gradient⁻Operator())
-#∇⁻(v::VectorField) = VectorField(nothing, v, Gradient⁻Operator())
 
 Curl⁻(v)           = Curl⁻(nothing, v)
 Curl⁻(d, v)        = VectorField(d, v, Curl⁻Operator())
@@ -156,12 +163,14 @@ Curl⁻(d, v)        = VectorField(d, v, Curl⁻Operator())
 #
 Product{D,V}  = AbstractOperator{D,V,ProductOperator}
 
-
-×( ::Type{∇} , v ::VectorField) = Curl(v)
-×( ::Type{∇⁺}, v ::VectorField) = Curl⁺(v)
-×( ::Type{∇⁻}, v ::VectorField) = Curl⁻(v)
-×(s::Float64, var::VectorField) = VectorField(s, var, ProductOperator())
-⋅( ::Type{∇}, var::VectorField) = ScalarField(nothing, var, DivergenceOperator())
+#TODO: Missing dot and cross product
+×( ::Type{∇} ,  v ::VectorField) = Curl(v)
+×( ::Type{∇⁺},  v ::VectorField) = Curl⁺(v)
+×( ::Type{∇⁻},  v ::VectorField) = Curl⁻(v)
+×(s::Float64 , var::VectorField) = VectorField(s, var, ProductOperator())
+⋅( ::Type{∇} , var::VectorField) = ScalarField(nothing, var, DivergenceOperator())
+⋅( ::Type{∇⁺}, var::VectorField) = ScalarField(nothing, var, Divergence⁺Operator())
+⋅( ::Type{∇⁻}, var::VectorField) = ScalarField(nothing, var, Divergence⁻Operator())
 
 VectorField(d, v, o::Operator)  = VectorField(ApplyOperatorX(d, v, o), ApplyOperatorY(d, v, o), ApplyOperatorZ(d, v, o))
 ScalarField(d, v, o::Operator)  = ScalarField(ApplyOperatorScalar(d, v, o))
