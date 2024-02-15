@@ -17,7 +17,7 @@ struct ZComponent <: AbstractComponent end
 struct ScalarComponent <: AbstractComponent end
 
 
-
+include("fields.jl")
 
 
 struct ApplyOperator{D,V,O<:Operator,C<:AbstractComponent} <: AbstractApplyOperator{O}
