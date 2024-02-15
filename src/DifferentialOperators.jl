@@ -79,7 +79,12 @@ function compute!(op::VectorField{X,Y,Z},grid_data::AbstractGridDerivatives, v::
     v.z[i, j] = op.z(grid_data, i, j)
     nothing
 end
-
+function evaluate!(op::VectorField{X,Y,Z}, grid_data::AbstractGridDerivatives, v::VectorField, i::Int64, j::Int64) where {X,Y,Z}
+    v.x[i, j] = op.x(grid_data, i, j)
+    v.y[i, j] = op.y(grid_data, i, j)
+    v.z[i, j] = op.z(grid_data, i, j)
+    nothing
+end
 function compute!(op::ScalarField, grid_data::AbstractGridDerivatives, v::ScalarField, i_::UnitRange{Int64}, j_::UnitRange{Int64}) 
     @inbounds for j in j_
         for i in i_

@@ -5,6 +5,7 @@ version = "1.0.0-DEV"
 
 [deps]
 LoopVectorization = "bdcacae8-1622-11e9-2a5c-532679323890"
+PkgTemplates = "14b8a8f1-9102-5b29-a752-f990bacb7fe1"
 
 [compat]
 julia = "1"
