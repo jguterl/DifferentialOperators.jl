@@ -1,60 +1,107 @@
 using DifferentialOperators
 using BenchmarkTools
+
+# A wrapper for testing (f is the operator we are interested in)
+ig = 1
+test!(f, result)  = compute!(f, grid_data, result, 1+ig:nx-ig, 1+ig:ny-ig)
+test_threads!(f, result)  = compute_threads!(f, grid_data, result, 1+ig:nx-ig, 1+ig:ny-ig)
+
+# Grid sizes
+nx, ny = 128, 256
+
 # First we create a grid 
-grid = Grid(100, 100; L=[10.0, 2.0])
+grid = Grid(nx, ny; L=[2π, 4π])
 
 # We also define the data needed to calculated the derivatives (we can define order of accuracy here)
 grid_data = GridDerivatives(grid);
 
+dx = grid_data.dx.data[2,2]
+dy = grid_data.dy.data[2,2]
+
 # define a vector B  with some non-uniform value
-B = VectorField(grid);
-@. B.y.data = exp(-grid.y - grid.x);
-@. B.x.data = exp(-grid.y - grid.x);
-@. B.z.data = exp(-grid.y - grid.x);
+kx = 1; ky=2; kz=3;
 
-nx, ny = size(grid)
-#a wrapper for testing (f is the operator we are interested in)
-test!(f, result)  = compute!(f, grid_data, result, 3:nx-3, 3:ny-2)
-test_threads!(f, result)  = compute_threads!(f, grid_data, result, 3:nx-3, 3:ny-2)
-#Let's do a series of test 
+ψ = ScalarField(grid);
+@. ψ.field = cos(kx*grid.x) * cos(ky*grid.y)
+
+#
+# ∇ψ in collocated grid
+#
+print("Test ∇(ψ)\n")
+exp1 = ∇(ψ)
+res1 = VectorField(grid)
+@btime test!($exp1,$res1)
+
+#B = VectorField(grid);
+#@. B.x.data = cos(kx*grid.y) * cos(kx*grid.x);
+#@. B.y.data = cos(ky*grid.y) * cos(ky*grid.x);
+#@. B.z.data = cos(kz*grid.y) * cos(kz*grid.x);
+
+
+# Staggered grids asuming half a grid point displacement
+#grid⁺ˣ = Grid(nx, ny; L=[2π, 4π], d0=[0.5*dx, 0     ])
+#grid⁺ʸ = Grid(nx, ny; L=[2π, 4π], d0=[   0.0, 0.5*dy])
+#grid⁺ᶻ = Grid(nx, ny; L=[2π, 4π], d0=[   0.0, 0.0   ]) #Placehold for z grid
+
+#
+# This vector is defined using a FV like grid, with different location
+# for the x,y,z components
+#
+#B⁺ = VectorField(grid);
+#@. B⁺.x.data = cos(kx*grid⁺ˣ.y) * cos(kx*grid⁺ˣ.x);
+#@. B⁺.y.data = cos(ky*grid⁺ʸ.y) * cos(ky*grid⁺ʸ.x);
+#@. B⁺.z.data = cos(kz*grid⁺ᶻ.y) * cos(kz*grid⁺ᶻ.x);
+
+
+
+# Let's do a series of test 
 # First a simple product scalar times B
-η = 10.0;
-f1 = (η × B);
-r1 = VectorField(grid) # this is the result of the operator applied onto B or whatever field in the definition of f
-@btime test!($f1, $r1)
+#η = 10.0;
+#f1 = (η × B);
+#r1 = VectorField(grid) # this is the result of the operator applied onto B or whateve#r field in the definition of f
+#print("Test η×B\n")
+#@btime test!($f1, $r1)
 
-# Thne the curl
-f2 = ((∇ × B));
-r2 = VectorField(grid)
-@btime test!($f2, $r2)
+# Then the curl
+#f2 = ((∇⁺ × B));
+#r2 = VectorField(grid)
+#print("Test ∇⁺×B\n")
+#@btime test!($f2, $r2)
 
 # Combine 1 and 2 
-f3 = (η × (∇ × B))
-r3 = VectorField(grid)
-@btime test!($f3, $r3)
+#f3 = (η × (∇ × B))
+#r3 = VectorField(grid)
+#print("Test η×∇×B\n")
+#@btime test!($f3, $r3)
 
 # Finally something useful...
-f4 = ∇ × (η × (∇ × B))
-r4 = VectorField(grid)
-@btime test!($f4, $r4)
+#f4 = ∇⁻ × (η × (∇⁺ × B))
+#r4 = VectorField(grid)
+#print("Test ∇⁻×η×∇⁺×B\n")
+#@btime test!($f4, $r4)
 
 # We can also compose at will
-f4 = ∇ × (f3)
-r4 = VectorField(grid)
-@btime test!($f4, $r4)
+#f4 = ∇ × (f3)
+#r4 = VectorField(grid)
+#print("Test composition ∇×(previous calculation)\n")
+#@btime test!($f4, $r4)
 
 # Some acceleration...
-f4 = ∇ × (η × (∇ × B))
-r4 = VectorField(grid)
-@btime test_threads!($f4, $r4)
-#let's also do a gradient for fun
-f5 = ∇(B)
-r5 = VectorField(grid)
-@btime test!($f5, $r5)
+#f4 = ∇ × (η × (∇ × B))
+#r4 = VectorField(grid)
+#print("Test composition ∇×(previous calculation), threaded\n")
+#@btime test_threads!($f4, $r4)
 
-f6 = ∇⋅(B)
-r6 = ScalarField(grid)
-@btime test!($f6, $r6)
+#let's also do a gradient for fun
+#f5 = ∇(B)
+#r5 = VectorField(grid)
+#print("Test ∇(B)\n")
+#@btime test!($f5, $r5)
+
+#f6 = ∇⋅(B)
+#r6 = ScalarField(grid)
+#print("Test ∇⋅(B)\n")
+#@btime test!($f6, $r6)
 # the final call to the operator is inline and can be adjusted. It requires data for differentiation.
 # This can be dispatched to setup different order of differentation 
 
