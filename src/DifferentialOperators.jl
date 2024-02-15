@@ -4,8 +4,10 @@ abstract type AbstractGrid end
 abstract type AbstractGridDerivatives end 
 
 # data structures for dispatches purposes 
-abstract type AbstractVectorField end 
-abstract type AbstractScalarField end
+abstract type Field end 
+abstract type AbstractTensorField <: Field end
+abstract type AbstractVectorField <: Field end 
+abstract type AbstractScalarField <: Field end
 abstract type AbstractGridData{T} end
 abstract type AbstractFieldData{T} end
 abstract type Operator end
@@ -26,6 +28,7 @@ struct ApplyOperator{D,V,O<:Operator,C<:AbstractComponent} <: AbstractApplyOpera
     o::O
     component::C
 end
+
 ApplyOperatorX(d, v, o) = ApplyOperator(d, v, o, XComponent())
 ApplyOperatorY(d, v, o) = ApplyOperator(d, v, o, YComponent())
 ApplyOperatorZ(d, v, o) = ApplyOperator(d, v, o, ZComponent())
@@ -131,5 +134,5 @@ end
 include("operators.jl")
 include("grid.jl")
 include("derivatives.jl")
-export Grid, VectorField, GridDerivatives, ScalarField
+export MHDGrid, Grid, VectorField, GridDerivatives, ScalarField, TensorField, Field
 end

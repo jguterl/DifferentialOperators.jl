@@ -1,5 +1,7 @@
 #Product
 struct ProductOperator     <: Operator end
+struct ScalarProductOperator      <: Operator end #TODO:where does it belong -> center?
+struct ContractionOperator <: Operator end #TODO:where does it belong -> center?
 
 #Centered operators
 struct CurlOperator        <: Operator end
@@ -22,6 +24,13 @@ struct Divergence⁻Operator <: Operator end
 (op::ApplyOperator{D,V,ProductOperator,YComponent})(args...) where {D<:Float64,V} = op.var.y(args...) * op.data
 (op::ApplyOperator{D,V,ProductOperator,ZComponent})(args...) where {D<:Float64,V} = op.var.z(args...) * op.data
 
+# scalar product
+(op::ApplyOperator{D,V,ScalarProductOperator,ScalarComponent})(args...) where {D<:VectorField,V<:VectorField} = op.var.x(args...) * op.data.x(args...) + op.var.y(args...) * op.data.y(args...) + op.var.z(args...) * op.data.z(args...)
+
+#contraction product
+(op::ApplyOperator{D,V,ContractionOperator,XComponent})(args...) where {D<:VectorField,V<:TensorField} = op.var.xx(args...) * op.data.x(args...) + op.var.xy(args...) * op.data.y(args...) + op.var.xz(args...) * op.data.z(args...)
+(op::ApplyOperator{D,V,ContractionOperator,YComponent})(args...) where {D<:VectorField,V<:TensorField} = op.var.yx(args...) * op.data.x(args...) + op.var.yy(args...) * op.data.y(args...) + op.var.yz(args...) * op.data.z(args...)
+(op::ApplyOperator{D,V,ContractionOperator,ZComponent})(args...) where {D<:VectorField,V<:TensorField} = op.var.zx(args...) * op.data.x(args...) + op.var.zy(args...) * op.data.y(args...) + op.var.zz(args...) * op.data.z(args...)
 #
 # Centered operators
 #
@@ -138,6 +147,12 @@ Product{D,V}  = AbstractOperator{D,V,ProductOperator}
 ⋅( ::Type{∇} , var::VectorField) = ScalarField(nothing, var, DivergenceOperator())
 ⋅( ::Type{∇⁺}, var::VectorField) = ScalarField(nothing, var, Divergence⁺Operator())
 ⋅( ::Type{∇⁻}, var::VectorField) = ScalarField(nothing, var, Divergence⁻Operator())
+
+#scalar product 
+⋅(a::VectorField, b::VectorField) = ScalarField(b, a, ScalarProductOperator())
+⋅(a::TensorField, b::VectorField) = VectorField(b, a, ContractionOperator())
+⋅(::Type{∇⁺}, var::VectorField) = ScalarField(nothing, var, ScalarProductOperator())
+⋅(::Type{∇⁻}, var::VectorField) = ScalarField(nothing, var, ScalarProductOperator())
 
 VectorField(d, v, o::Operator)  = VectorField(ApplyOperatorX(d, v, o), ApplyOperatorY(d, v, o), ApplyOperatorZ(d, v, o))
 ScalarField(d, v, o::Operator)  = ScalarField(ApplyOperatorScalar(d, v, o))
