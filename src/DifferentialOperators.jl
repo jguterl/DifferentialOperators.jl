@@ -13,9 +13,6 @@ struct GridData{T} <: AbstractGridData{T}
     data::T
 end
 
-
-
-
 struct FieldData{T} <: AbstractFieldData{T}
     data::T
 end
@@ -30,6 +27,10 @@ end
 #generic setor (could add typing if concern with dimension compability) 
 Base.setindex!(f::FieldData, args...) = setindex!(f.data, args...)
 Base.getindex(v::FieldData, args...) = getindex(v.data, args...)
+
+#
+# Vector field structure
+#
 # we only consider 3 components because of curl 
 struct VectorField{X,Y,Z} <: AbstractVectorField
     x::X 
@@ -42,13 +43,17 @@ VectorField(dims::NTuple{N,Int64}) where {N} = VectorField((FieldData(zeros(dims
 VectorField(n::Int64) = VectorField((n,))
 VectorField(nx::Int64, ny::Int64) = VectorField((nx,ny))
 VectorField(grid::AbstractGrid) = VectorField(size(grid))
+
+#
+# Scalar field structure
+#
 struct ScalarField{D} <: AbstractScalarField
     field::D
 end
 
 #generic setor (could add typing if concern with dimension compability) 
-
-ScalarField(dims::NTuple{N,Int64}) where {N} = ScalarField((zeros(dims...) for fn in fieldnames(ScalarField))...)
+#ScalarField(dims::NTuple{N,Int64}) where {N} = ScalarField((zeros(dims...) for fn in fieldnames(ScalarField))...)
+ScalarField(dims::NTuple{N,Int64}) where {N} = ScalarField((FieldData(zeros(dims...)) for fn in fieldnames(ScalarField))...)
 ScalarField(n::Int64) = ScalarField((n,))
 ScalarField(nx::Int64, ny::Int64) = ScalarField((nx, ny))
 ScalarField(grid::AbstractGrid) = ScalarField(size(grid))
@@ -71,8 +76,9 @@ struct ApplyOperator{D,V,O<:Operator,C<:AbstractComponent} <: AbstractApplyOpera
 end
 ApplyOperatorX(d, v, o) = ApplyOperator(d, v, o, XComponent())
 ApplyOperatorY(d, v, o) = ApplyOperator(d, v, o, YComponent())
-ApplyOperatorZ(d, v, o) = ApplyOperator(d, v, o,ZComponent())
+ApplyOperatorZ(d, v, o) = ApplyOperator(d, v, o, ZComponent())
 ApplyOperatorScalar(d, v, o) = ApplyOperator(d, v, o, ScalarComponent())
+
 function compute!(op::VectorField{X,Y,Z},grid_data::AbstractGridDerivatives, v::VectorField, i::Int64, j::Int64) where {X,Y,Z}
     v.x[i, j] = op.x(grid_data, i, j)
     v.y[i, j] = op.y(grid_data, i, j)
@@ -84,6 +90,20 @@ function compute!(op::ScalarField, grid_data::AbstractGridDerivatives, v::Scalar
     @inbounds for j in j_
         for i in i_
             v.field[i, j] = op.field(grid_data, i, j)
+        end
+    end
+    nothing
+end
+
+#
+# This should be a scalar to vector transformation
+#
+function compute!(op::ScalarField, grid_data::AbstractGridDerivatives, v::VectorField, i_::UnitRange{Int64}, j_::UnitRange{Int64}) 
+    @inbounds for j in j_
+        for i in i_
+            v.x[i, j] = op.x(grid_data, i, j)
+            v.y[i, j] = op.y(grid_data, i, j)
+            v.z[i, j] = op.z(grid_data, i, j)
         end
     end
     nothing
@@ -141,7 +161,7 @@ function compute_threads!(op::VectorField{X,Y,Z}, grid_data::AbstractGridDerivat
 end
 
 
-export compute!, compute_turbo!,compute_threads!
+export compute!, compute_turbo!, compute_threads!
 
 function (op::VectorField{X,Y,Z})(grid_data::AbstractGridDerivatives, v::VectorField,  i::Int64, j::Int64)  where {X,Y,Z}
     v.x[i, j] = op.x(grid_data, i, j)
