@@ -1,5 +1,6 @@
 module DifferentialOperators
 using LoopVectorization
+
 abstract type AbstractGrid end 
 abstract type AbstractGridDerivatives end 
 
@@ -18,6 +19,7 @@ struct FieldData{T} <: AbstractFieldData{T}
 end
 
 # accesssor
+# Horrible hack warning: the grid spacings look wrong near the edge. This is OK for uniform grid at the moment
 (d::GridData)(i, j) = d.data[i, j]
 
 (d::FieldData{T})(grid_data::AbstractGridDerivatives,i, j) where T = d.data[i, j]
