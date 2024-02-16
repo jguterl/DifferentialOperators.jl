@@ -19,6 +19,13 @@ struct Curl⁻Operator       <: Operator end
 struct Gradient⁻Operator   <: Operator end
 struct Divergence⁻Operator <: Operator end
 
+struct GenericOperator{T}  <: Operator end
+# generic operator
+(op::ApplyOperator{D,V,GenericOperator{O},XComponent})(args...) where {O,D<:VectorField,V<:VectorField} = O(op.var.x(args...), op.data.x(args...))
+(op::ApplyOperator{D,V,GenericOperator{O},YComponent})(args...) where {O,D<:VectorField,V<:VectorField} = O(op.var.y(args...), op.data.y(args...))
+(op::ApplyOperator{D,V,GenericOperator{O},ZComponent})(args...) where {O,D<:VectorField,V<:VectorField} = O(op.var.z(args...), op.data.z(args...))
+(op::ApplyOperator{D,V,GenericOperator{O},ScalarComponent})(args...) where {O,D<:ScalarField,V<:ScalarField} = O(op.var.field(args...), op.data.field(args...))
+
 # multiply
 (op::ApplyOperator{D,V,ProductOperator,XComponent})(args...) where {D<:Float64,V} = op.var.x(args...) * op.data
 (op::ApplyOperator{D,V,ProductOperator,YComponent})(args...) where {D<:Float64,V} = op.var.y(args...) * op.data
@@ -107,6 +114,44 @@ Gradient{D,V}      = AbstractOperator{D,V,GradientOperator}
 
 #∇(v::TensorVectorField) = VectorField(nothing, v, GradientOperator())
 
+# ---- time operator-----
+abstract type Apply∂ₜ{C} end 
+
+function Apply∂ₜ{C}(Δt::Float64, v <: Union{Field,ApplyOperator}, order) where {C}
+    order == 1 && return Apply∂ₜ1order{C}(Δt, v)
+    error("not implemented yet....")
+    order == 2 && return Apply∂ₜ2order{C}(Δt, v)
+end
+
+∂ₜ(v::T, Δt::Float64, order=1) where {T<:Union{Field,ApplyOperator}} = get_base_type(T)(Apply∂ₜ{fn}([Δt], v, order) for fn in fieldnames(T))
+
+struct Apply∂ₜ1order{C,F<:Vector,T<:Union{Field,ApplyOperator}} <: Apply∂ₜ{C}
+    Δt::F
+    var::T
+    var_old::T
+end
+
+Apply∂ₜ1order{C}(Δt::Float64, v::T) where {C,F,T} = Apply∂ₜ1order{C,F,T}([Δt], v,copy(v))
+
+struct Apply∂ₜ2order{C,F<:Vector,T<:Union{Field,ApplyOperator}} <: Apply∂ₜ{C}# let's not use mutable struct because of gpu
+    Δt::F 
+    var::T
+    var_old::T
+    var_old2::T
+end
+
+Apply∂ₜ2order{C}(Δt::Float64, v::T) where {C,F,T} = Apply∂ₜ2order{C,F,T}([Δt, Δt], v, copy(v), copy(v))
+
+set_dt!(∂ₜ::Apply∂ₜ2o, dt::Float64) = ∂ₜ.Δt[1] = dt
+
+(∂ₜ::Apply∂ₜ1o{:x,F,T})(args...) where {F,T}= (∂ₜ.var.x(args...) - ∂ₜ.var_old.x(args...)) / Δt[1]
+(∂ₜ::Apply∂ₜ1o{:y,F,T})(args...) where {F, T} = (∂ₜ.var.y(args...) - ∂ₜ.var_old.y(args...)) / Δt[1]
+(∂ₜ::Apply∂ₜ1o{:z,F,T})(args...) where {F, T} = (∂ₜ.var.z(args...) - ∂ₜ.var_old.z(args...)) / Δt[1]
+(∂ₜ::Apply∂ₜ1o{:field,F,T})(args...) where {F, T} = (∂ₜ.var.field(args...) - ∂ₜ.var_old.field(args...)) / Δt[1]
+
+(∂ₜ::Apply∂ₜ2o)(args...) = error() # TODO .... 
+
+# ---------------------------------------------- #
 #
 # What are these constructors(?) for????? I added the gradient ones, but they don't seem to 
 # do anything
@@ -153,8 +198,10 @@ Product{D,V}  = AbstractOperator{D,V,ProductOperator}
 ⋅(a::TensorField, b::VectorField) = VectorField(b, a, ContractionOperator())
 ∻(a::TensorField, b::VectorField) = ScalarField(b, ⋅(a, b), ScalarProductOperator()) #notation: ∻ = `\kernelcontraction` TODO: FH please check
 
+# ∂t operator
++(∂ₜ::Apply∂ₜ,{F,T} var::T) where {F,T<:Field} = get_base_type(T)(var, ∂ₜ, GenericOperator(:+))
 
 VectorField(d, v, o::Operator)  = VectorField(ApplyOperatorX(d, v, o), ApplyOperatorY(d, v, o), ApplyOperatorZ(d, v, o))
 ScalarField(d, v, o::Operator)  = ScalarField(ApplyOperatorScalar(d, v, o))
 
-export ∇, ∇², ∇⁺, ∇⁻, ×, ⋅, ∻
+export ∇, ∇², ∇⁺, ∇⁻, ×, ⋅, ∻, ∂ₜ

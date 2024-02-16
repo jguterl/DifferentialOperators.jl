@@ -95,18 +95,18 @@ end
     nothing
 end
 
-function compute_turbo!(op::VectorField{X,Y,Z}, grid_data::AbstractGridDerivatives, v::VectorField, i_::UnitRange{Int64}, j_::UnitRange{Int64}) where {X,Y,Z}
-     for j in j_
-        for i in i_
-            @inbounds begin
-                v.x[i, j] = op.x(grid_data, i, j) # note: possible to completely fuse that loop as well but derivative at boundaries need to be handle properly
-                v.y[i, j] = op.y(grid_data, i, j)
-                v.z[i, j] = op.z(grid_data, i, j)
-            end
-        end
-    end
-    nothing
-end
+# function compute_turbo!(op::VectorField{X,Y,Z}, grid_data::AbstractGridDerivatives, v::VectorField, i_::UnitRange{Int64}, j_::UnitRange{Int64}) where {X,Y,Z}
+#      for j in j_
+#         for i in i_
+#             @inbounds begin
+#                 v.x[i, j] = op.x(grid_data, i, j) # note: possible to completely fuse that loop as well but derivative at boundaries need to be handle properly
+#                 v.y[i, j] = op.y(grid_data, i, j)
+#                 v.z[i, j] = op.z(grid_data, i, j)
+#             end
+#         end
+#     end
+#     nothing
+# end
 
 function compute_threads!(op::VectorField{X,Y,Z}, grid_data::AbstractGridDerivatives, v::VectorField, i_::UnitRange{Int64}, j_::UnitRange{Int64}) where {X,Y,Z}
     Threads.@threads for j in j_
