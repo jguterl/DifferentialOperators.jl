@@ -1,6 +1,7 @@
 module DifferentialOperators
 using LoopVectorization
 abstract type AbstractGrid end 
+abstract type AbstractMHDGrid end
 abstract type AbstractGridDerivatives end 
 
 # data structures for dispatches purposes 
@@ -18,7 +19,7 @@ struct YComponent <: AbstractComponent end
 struct ZComponent <: AbstractComponent end
 struct ScalarComponent <: AbstractComponent end
 
-
+export AbstractGrid, AbstractMHDGrid
 include("fields.jl")
 
 

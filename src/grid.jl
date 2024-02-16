@@ -69,7 +69,7 @@ UnitaryVectors(grid::Grid) = VectorField(VectorField(ones(grid), zeros(grid),zer
 export MHDGrid
 
 
-struct MHDGrid{G,D,I,N,U}
+struct MHDGrid{G,D,I,N,U} <: AbstractMHDGrid
     grid::G
     grid_data::D
     indexes::I
