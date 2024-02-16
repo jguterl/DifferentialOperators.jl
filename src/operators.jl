@@ -151,10 +151,11 @@ Product{D,V}  = AbstractOperator{D,V,ProductOperator}
 #scalar product 
 ⋅(a::VectorField, b::VectorField) = ScalarField(b, a, ScalarProductOperator())
 ⋅(a::TensorField, b::VectorField) = VectorField(b, a, ContractionOperator())
+∻(a::TensorField, b::VectorField) = ScalarField(b, ⋅(a, b), ScalarProductOperator()) #notation: ∻ = `\kernelcontraction` TODO: FH please check
 ⋅(::Type{∇⁺}, var::VectorField) = ScalarField(nothing, var, ScalarProductOperator())
 ⋅(::Type{∇⁻}, var::VectorField) = ScalarField(nothing, var, ScalarProductOperator())
 
 VectorField(d, v, o::Operator)  = VectorField(ApplyOperatorX(d, v, o), ApplyOperatorY(d, v, o), ApplyOperatorZ(d, v, o))
 ScalarField(d, v, o::Operator)  = ScalarField(ApplyOperatorScalar(d, v, o))
 
-export ∇, ∇², ∇⁺, ∇⁻, ×, ⋅
+export ∇, ∇², ∇⁺, ∇⁻, ×, ⋅, ∻
