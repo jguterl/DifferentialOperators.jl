@@ -15,7 +15,8 @@ function compute_error(v1::VectorField, v0::VectorField, g::Grid, intx, inty)
     dv = VectorField(g)
     @. dv.x.data = v1.x.data - v0.x.data
     @. dv.y.data = v1.y.data - v0.y.data 
-    return norm(dv.x.data[intx,inty],Inf), norm(dv.y.data[intx,inty],Inf)
+    @. dv.z.data = v1.z.data - v0.z.data
+    return norm(dv.x.data[intx,inty],Inf), norm(dv.y.data[intx,inty],Inf), norm(dv.z.data[intx,inty],Inf)
 end
 
 # A wrapper for testing (f is the operator we are interested in)
@@ -24,7 +25,7 @@ end
 #test_threads!(f, result, intx, inty)  = compute_threads!(f, grid_data, result, intx, inty)
 
 # Analytical solutions to the problems
-kx = 1; ky = 2; kz = 3;
+kx = 2; ky = 1; kz = 3;
 
 @variables x y
 ∂x     = Differential(x)
@@ -42,36 +43,62 @@ fxx = eval( build_function( ∂xx_ψ₀, x , y ) )
 fyy = eval( build_function( ∂yy_ψ₀, x , y ) )
 
 # Grid sizes
-nx0, ny0 = 32, 32
+Lx , Ly  = 2π, 4π
+nx0, ny0 = 32, 64
 ng       = 1
+ng2      = 2
 nreps    = 6
 
-nscltests = 1
-nvectests = 2
+nscltests = 4
+nvectests = 4
 ndims     = 2
 nerrs     = ndims * nvectests + nscltests
-err       = zeros(nerrs,nreps)
+err       = zeros(nreps,nerrs)
 
 for n=1:nreps
 
-    nx = nx0 * 2^(n-1)
-    ny = ny0 * 2^(n-1)
+    nx = nx0 * 2^(n-1) # Number of interior points
+    ny = ny0 * 2^(n-1) # Number of interior points
     
-    intx = 1+ng:nx-ng
-    inty = 1+ng:ny-ng
+    intx = 1+ng:nx+ng
+    inty = 1+ng:ny+ng
 
-    # First we create a grid 
-    grid = Grid(nx, ny; L=[2π, 4π])
+    intx2 = 1+ng2:nx+ng2
+    inty2 = 1+ng2:ny+ng2
+
+    # First we create a grid that start at x=0 on the first interior point
+    local_grid = Grid(nx, ny; L=[Lx, Ly], d0 = [ 0., 0. ], ng = [ 1, 1 ] )
 
     # We also define the data needed to calculated the derivatives (we can define order of accuracy here)
-    grid_data = GridDerivatives(grid);
+    grid_data = GridDerivatives(local_grid);
 
     dx = grid_data.dx.data[2,2]
     dy = grid_data.dy.data[2,2]
 
-    ψ = ScalarField(grid);
-    @. ψ.field.data = cos(kx*grid.x) * cos(ky*grid.y)
+    # Staggered grids asuming half a grid point displacement
+    # This is the standard finite volume grid for fluxes through faces
+    gridvˣ = Grid(nx, ny; L=[Lx, Ly], d0=[0.5*dx, 0     ], ng =[1,1])
+    gridvʸ = Grid(nx, ny; L=[Lx, Lx], d0=[   0.0, 0.5*dy], ng =[1,1])
+    gridvᶻ = Grid(nx, ny; L=[Lx, Ly], d0=[   0.0, 0.0   ], ng =[1,1]) #Placehold for z grid
 
+    # This is the adjoint grid produced using curl(v) 
+    gridbˣ = Grid(nx, ny; L=[Lx, Ly], d0=[ 0.0   , 0.5*dy], ng =[1,1]) # 0.5*dz
+    gridbʸ = Grid(nx, ny; L=[Lx, Ly], d0=[ 0.5*dx, 0.0   ], ng =[1,1]) # 0.5*dz
+    gridbᶻ = Grid(nx, ny; L=[Lx, Ly], d0=[ 0.5*dx, 0.5*dy], ng =[1,1]) #Placehold for z grid
+
+    ψ = ScalarField(local_grid);
+    @. ψ.field.data = cos(kx*local_grid.x) * cos(ky*local_grid.y)
+
+    V = VectorField(local_grid)
+    @. V.x.data = 0.0
+    @. V.y.data = 0.0
+    @. V.z.data = ψ.field.data
+    
+    v_num = VectorField(local_grid)
+    s_num = ScalarField(local_grid)
+    v_ana = VectorField(local_grid)
+    s_ana = ScalarField(local_grid)
+    
     #
     # ∇ψ, ∇²ψ, ∇×∇ψ in collocated grid
     #
@@ -79,75 +106,116 @@ for n=1:nreps
     #
     # First test
     #
-    #print("Test ∇(ψ)\n")
-    #Analytical solution
-    f1_ana = VectorField(grid)
-    @. f1_ana.x.data = fx( grid.x, grid.y )
-    @. f1_ana.y.data = fy( grid.x, grid.y )
-
     #Numerical solution
     f1_expr = ∇(ψ)
-    f1_num  = VectorField(grid)
-    compute!(f1_expr, grid_data, f1_num, intx, inty)
+    v_num  = VectorField(local_grid)
+    compute!(f1_expr, grid_data, v_num, intx, inty)
 
-    #Error calculation
-    err[1,n],err[2,n] = compute_error( f1_num, f1_ana, grid, intx, inty )
-    #print("Norm inf=", f1_err_x, " ", f1_err_y, "\n\n")
+    #Analytical solution
+    @. v_ana.x.data = fx( local_grid.x, local_grid.y )
+    @. v_ana.y.data = fy( local_grid.x, local_grid.y )
+    @. v_ana.z.data = 0
+    
+    #Compute error
+    err[n,1],err[n,2] = compute_error( v_num, v_ana, local_grid, intx, inty )
 
     #
     # Second test
     #
-    #print("Test ∇²(ψ)\n")
-    #Analytical solution
-    f2_ana = ScalarField(grid)
-    @. f2_ana.field.data = fxx(grid.x, grid.y) + fyy(grid.x, grid.y)
-
     #Numerical solution
     f2_expr = ∇²(ψ)
-    f2_num  = ScalarField(grid)
-    compute!(f2_expr, grid_data, f2_num, intx, inty)
+    compute!(f2_expr, grid_data, s_num, intx, inty)
+    
+    #Analytical solution
+    s_ana = ScalarField(local_grid)
+    @. s_ana.field.data = fxx(local_grid.x, local_grid.y) + fyy(local_grid.x, local_grid.y)
 
-    #Residual
-    err[3,n] = compute_error( f2_num, f2_ana, grid, intx, inty )
-    #print("Norm inf=", f2_err, "\n\n")
+    #Compute error
+    err[n,3] = compute_error( s_num, s_ana, local_grid, intx, inty )
 
     #
     # Third test
     #
-    #print("Test ∇×∇(ψ)\n")
-    #Analytical solution
-    f3_ana = VectorField(grid) #All zeros
-
     #Numerical solution
     f3_expr = ∇×∇(ψ)
-    f3_num  = VectorField(grid)
-    compute!(f3_expr, grid_data, f3_num, intx, inty)
-    err[4,n],err[5,n] = compute_error( f3_num, f3_ana, grid, intx, inty )
-    #print("Norm inf=", f3_err_x, " ", f3_err_y, "\n\n")
+    v_num  = VectorField(local_grid)
+    compute!(f3_expr, grid_data, v_num, intx, inty)
+    
+    #Analytical solution
+    v_ana = VectorField(local_grid) #All zeros
 
+    #Compute error
+    err[n,4],err[n,5] = compute_error( v_num, v_ana, local_grid, intx, inty )
+
+    #
+    # Fourth test, v_z = psi, calculate curl, then calculate div
+    #    
+    f4_expr = ∇×V
+    v_num  = VectorField(local_grid)
+    compute!(f4_expr, grid_data, v_num, intx, inty)
+
+    #Analytical solution
+    v_ana = VectorField(local_grid)
+    @. v_ana.x.data =  fy(local_grid.x,local_grid.y)
+    @. v_ana.y.data = -fx(local_grid.x,local_grid.y)
+
+    #Compute error
+    err[n,6],err[n,7] = compute_error( v_num, v_ana, local_grid, intx, inty )
+
+    #
+    # Calculate div of previous expression
+    #
+    f5_expr = ∇⋅(f4_expr)
+    s_num  = ScalarField(local_grid)
+    compute!(f5_expr, grid_data, s_num, intx, inty)
+
+    #Analytical solution
+    s_ana = ScalarField(local_grid) # All zero from div(curl)
+
+    #Compute error
+    err[n,8] = compute_error(s_num, s_ana, local_grid, intx, inty)
+
+    #
+    # Same as last test, with staggered grids
+    #
+    # Eventually these should work also on _some_ of the "ghosts"
+    #
+    f6_expr = ∇⁺×V
+    v_num  = VectorField(local_grid)
+    compute!(f6_expr, grid_data, v_num, intx, inty)
+
+    #Analytical solution
+    v_ana = VectorField(local_grid)
+    @. v_ana.x.data =  fy(gridbˣ.x,gridbˣ.y)
+    @. v_ana.y.data = -fx(gridbʸ.x,gridbʸ.y)
+
+    err[n,9], err[n,10] = compute_error(v_num, v_ana, local_grid, intx, inty)
+
+    # Divergence of the curl
+    f7_expr = ∇⁺⋅(f6_expr)
+    s_num  = ScalarField(local_grid)
+    compute!(f7_expr, grid_data, s_num, intx, inty)
+
+    #Analytical solution
+    s_ana = ScalarField(local_grid) # All zero
+    err[n,11] = compute_error(s_num, s_ana, local_grid, intx, inty)
+
+    #Curl of the curl (vector Laplacian)
+    f8_expr = ∇⁻×(∇⁺×(V))
+    v_num  = VectorField(local_grid)
+    compute!(f8_expr, grid_data, v_num, intx, inty)
+
+    #Analytical solution
+    v_ana = VectorField(local_grid)
+    @. v_ana.z.data = -( fxx(gridvᶻ.x, gridvᶻ.y) + fyy(gridvᶻ.x, gridvᶻ.y) )
+
+    nothing, nothing, err[n,12] = compute_error(v_num, v_ana, local_grid, intx, inty)
 end
 
-#B = VectorField(grid);
-#@. B.x.data = cos(kx*grid.y) * cos(kx*grid.x);
-#@. B.y.data = cos(ky*grid.y) * cos(ky*grid.x);
-#@. B.z.data = cos(kz*grid.y) * cos(kz*grid.x);
-
-
-# Staggered grids asuming half a grid point displacement
-#grid⁺ˣ = Grid(nx, ny; L=[2π, 4π], d0=[0.5*dx, 0     ])
-#grid⁺ʸ = Grid(nx, ny; L=[2π, 4π], d0=[   0.0, 0.5*dy])
-#grid⁺ᶻ = Grid(nx, ny; L=[2π, 4π], d0=[   0.0, 0.0   ]) #Placehold for z grid
-
-#
-# This vector is defined using a FV like grid, with different location
-# for the x,y,z components
-#
-#B⁺ = VectorField(grid);
-#@. B⁺.x.data = cos(kx*grid⁺ˣ.y) * cos(kx*grid⁺ˣ.x);
-#@. B⁺.y.data = cos(ky*grid⁺ʸ.y) * cos(ky*grid⁺ʸ.x);
-#@. B⁺.z.data = cos(kz*grid⁺ᶻ.y) * cos(kz*grid⁺ᶻ.x);
-
-
+print("Error for unstaggered operations vs number of points\n")
+print("∇ψ.x , ∇ψ.y, ∇²ψ, (∇×∇ψ).x, (∇×∇ψ).y\n")
+display(err)
+print("\n\n")
 
 # Let's do a series of test 
 # First a simple product scalar times B
