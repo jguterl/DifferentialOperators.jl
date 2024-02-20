@@ -53,7 +53,7 @@ nscltests = 4
 nvectests = 4
 ndims     = 2
 nerrs     = ndims * nvectests + nscltests
-err       = zeros(nreps,nerrs)
+num_err       = zeros(nreps,nerrs)
 
 for n=1:nreps
 
@@ -117,7 +117,7 @@ for n=1:nreps
     @. v_ana.z.data = 0
     
     #Compute error
-    err[n,1],err[n,2] = compute_error( v_num, v_ana, local_grid, intx, inty )
+    num_err[n,1],num_err[n,2] = compute_error( v_num, v_ana, local_grid, intx, inty )
 
     #
     # Second test
@@ -131,7 +131,7 @@ for n=1:nreps
     @. s_ana.field.data = fxx(local_grid.x, local_grid.y) + fyy(local_grid.x, local_grid.y)
 
     #Compute error
-    err[n,3] = compute_error( s_num, s_ana, local_grid, intx, inty )
+    num_err[n,3] = compute_error( s_num, s_ana, local_grid, intx, inty )
 
     #
     # Third test
@@ -145,7 +145,7 @@ for n=1:nreps
     v_ana = VectorField(local_grid) #All zeros
 
     #Compute error
-    err[n,4],err[n,5] = compute_error( v_num, v_ana, local_grid, intx, inty )
+    num_err[n,4],num_err[n,5] = compute_error( v_num, v_ana, local_grid, intx, inty )
 
     #
     # Fourth test, v_z = psi, calculate curl, then calculate div
@@ -160,7 +160,7 @@ for n=1:nreps
     @. v_ana.y.data = -fx(local_grid.x,local_grid.y)
 
     #Compute error
-    err[n,6],err[n,7] = compute_error( v_num, v_ana, local_grid, intx, inty )
+    num_err[n,6],num_err[n,7] = compute_error( v_num, v_ana, local_grid, intx, inty )
 
     #
     # Calculate div of previous expression
@@ -173,7 +173,7 @@ for n=1:nreps
     s_ana = ScalarField(local_grid) # All zero from div(curl)
 
     #Compute error
-    err[n,8] = compute_error(s_num, s_ana, local_grid, intx, inty)
+    num_err[n,8] = compute_error(s_num, s_ana, local_grid, intx, inty)
 
     #
     # Same as last test, with staggered grids
@@ -189,7 +189,7 @@ for n=1:nreps
     @. v_ana.x.data =  fy(gridbˣ.x,gridbˣ.y)
     @. v_ana.y.data = -fx(gridbʸ.x,gridbʸ.y)
 
-    err[n,9], err[n,10] = compute_error(v_num, v_ana, local_grid, intx, inty)
+    num_err[n,9], num_err[n,10] = compute_error(v_num, v_ana, local_grid, intx, inty)
 
     # Divergence of the curl
     f7_expr = ∇⁺⋅(f6_expr)
@@ -198,7 +198,7 @@ for n=1:nreps
 
     #Analytical solution
     s_ana = ScalarField(local_grid) # All zero
-    err[n,11] = compute_error(s_num, s_ana, local_grid, intx, inty)
+    num_err[n,11] = compute_error(s_num, s_ana, local_grid, intx, inty)
 
     #Curl of the curl (vector Laplacian)
     f8_expr = ∇⁻×(∇⁺×(V))
@@ -209,12 +209,12 @@ for n=1:nreps
     v_ana = VectorField(local_grid)
     @. v_ana.z.data = -( fxx(gridvᶻ.x, gridvᶻ.y) + fyy(gridvᶻ.x, gridvᶻ.y) )
 
-    nothing, nothing, err[n,12] = compute_error(v_num, v_ana, local_grid, intx, inty)
+    nothing, nothing, num_err[n,12] = compute_error(v_num, v_ana, local_grid, intx, inty)
 end
 
 print("Error for unstaggered operations vs number of points\n")
 print("∇ψ.x , ∇ψ.y, ∇²ψ, (∇×∇ψ).x, (∇×∇ψ).y\n")
-display(err)
+display(num_err)
 print("\n\n")
 
 # Let's do a series of test 
