@@ -88,6 +88,9 @@ function compute!(op::VectorField{X,Y,Z},grid_data::AbstractGridDerivatives, v::
     nothing
 end
 
+#
+# Scalar to scalar single threaded operation
+#
 function compute!(op::ScalarField, grid_data::AbstractGridDerivatives, v::ScalarField, i_::UnitRange{Int64}, j_::UnitRange{Int64}) 
     @inbounds for j in j_
         for i in i_
@@ -98,7 +101,21 @@ function compute!(op::ScalarField, grid_data::AbstractGridDerivatives, v::Scalar
 end
 
 #
-# This should be a scalar to vector transformation
+# Scalar to scalar single threaded operation
+#
+function compute_threads!(op::ScalarField, grid_data::AbstractGridDerivatives, v::ScalarField, i_::UnitRange{Int64}, j_::UnitRange{Int64}) 
+    Threads.@threads for j in j_
+        for i in i_
+            @inbounds begin
+                v.field[i, j] = op.field(grid_data, i, j)
+            end
+        end
+    end
+    nothing
+end
+
+#
+# Scalar to vector single threaded operation
 #
 function compute!(op::ScalarField, grid_data::AbstractGridDerivatives, v::VectorField, i_::UnitRange{Int64}, j_::UnitRange{Int64}) 
     @inbounds for j in j_
@@ -111,6 +128,25 @@ function compute!(op::ScalarField, grid_data::AbstractGridDerivatives, v::Vector
     nothing
 end
 
+#
+# Scalar to vector multi-threaded operation
+#
+function compute_threads!(op::ScalarField, grid_data::AbstractGridDerivatives, v::VectorField, i_::UnitRange{Int64}, j_::UnitRange{Int64}) 
+    Threads.@threads for j in j_
+        for i in i_
+            @inbounds begin
+                v.x[i, j] = op.x(grid_data, i, j)
+                v.y[i, j] = op.y(grid_data, i, j)
+                v.z[i, j] = op.z(grid_data, i, j)
+            end
+        end
+    end
+    nothing
+end
+
+#
+# Vector to vector single threaded operation
+#
 function compute!(op::VectorField{X,Y,Z}, grid_data::AbstractGridDerivatives, v::VectorField, i_::UnitRange{Int64}, j_::UnitRange{Int64}) where {X,Y,Z}
     @inbounds for j in j_
         for i in i_
@@ -121,18 +157,35 @@ function compute!(op::VectorField{X,Y,Z}, grid_data::AbstractGridDerivatives, v:
     end
     nothing
 end
-function _compute!(vx,vy,vz,opx,opy, opz, grid_data, i, j)
+
+#
+# Vector to vector multi-threaded operation
+#
+function compute_threads!(op::VectorField{X,Y,Z}, grid_data::AbstractGridDerivatives, v::VectorField, i_::UnitRange{Int64}, j_::UnitRange{Int64}) where {X,Y,Z}
+    Threads.@threads for j in j_
+        for i in i_
+            @inbounds begin
+                v.x[i, j] = op.x(grid_data, i, j) # note: possible to completely fuse that loop as well but derivative at boundaries need to be handle properly
+                v.y[i, j] = op.y(grid_data, i, j)
+                v.z[i, j] = op.z(grid_data, i, j)
+            end
+        end
+    end
+    nothing
+end
+
+function _compute!(vx,vy,vz,opx,opy,opz,grid_data, i, j)
             vx[i, j] = opx(grid_data, i, j)
             vy[i, j] = opy(grid_data, i, j)
             vz[i, j] = opz(grid_data, i, j)
 end
 function compute_turbo!(op::VectorField{X,Y,Z}, grid_data::AbstractGridDerivatives, v::VectorField, i_::UnitRange{Int64}, j_::UnitRange{Int64}) where {X,Y,Z}
-    # @turbo 
+    #@turbo 
     for j in j_
         for i in i_
-        _compute!(v.x,v.y,v.z,op.x,op.y, op.z, grid_data, i, j)
+            _compute!(v.x,v.y,v.z,op.x,op.y,op.z,grid_data,i,j)
+        end
     end
-end
     nothing
 end
 
@@ -148,20 +201,6 @@ function compute_turbo!(op::VectorField{X,Y,Z}, grid_data::AbstractGridDerivativ
     end
     nothing
 end
-
-function compute_threads!(op::VectorField{X,Y,Z}, grid_data::AbstractGridDerivatives, v::VectorField, i_::UnitRange{Int64}, j_::UnitRange{Int64}) where {X,Y,Z}
-    Threads.@threads for j in j_
-                            for i in i_
-                                @inbounds begin
-                                    v.x[i, j] = op.x(grid_data, i, j) # note: possible to completely fuse that loop as well but derivative at boundaries need to be handle properly
-                                    v.y[i, j] = op.y(grid_data, i, j)
-                                    v.z[i, j] = op.z(grid_data, i, j)
-                                end
-                            end
-    end
-    nothing
-end
-
 
 export compute!, compute_turbo!, compute_threads!
 
