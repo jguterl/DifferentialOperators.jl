@@ -1,7 +1,6 @@
 using CUDA
 using Adapt
 
-
 abstract type Backend end
 struct CPUBackend <: Backend end
 struct CUDABackend <: Backend end
