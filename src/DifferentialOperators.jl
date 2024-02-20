@@ -20,6 +20,11 @@ struct ZComponent <: AbstractComponent end
 struct ScalarComponent <: AbstractComponent end
 
 export AbstractGrid, AbstractMHDGrid
+
+# --- get primary type of object ---
+get_base_type(T) = get_base_type(typeof(T))
+get_base_type(T::DataType) = T.name.wrapper
+
 include("fields.jl")
 
 
@@ -34,7 +39,7 @@ ApplyOperatorX(d, v, o) = ApplyOperator(d, v, o, XComponent())
 ApplyOperatorY(d, v, o) = ApplyOperator(d, v, o, YComponent())
 ApplyOperatorZ(d, v, o) = ApplyOperator(d, v, o, ZComponent())
 ApplyOperatorScalar(d, v, o) = ApplyOperator(d, v, o, ScalarComponent())
-
+export ApplyOperator
 function compute!(op::VectorField{X,Y,Z},grid_data::AbstractGridDerivatives, v::VectorField, i::Int64, j::Int64) where {X,Y,Z}
     v.x[i, j] = op.x(grid_data, i, j)
     v.y[i, j] = op.y(grid_data, i, j)

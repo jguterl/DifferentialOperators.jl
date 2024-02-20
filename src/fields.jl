@@ -14,6 +14,9 @@ end
 (d::FieldData{T})(i, j) where {T} = d.data[i, j]
 Base.ndims(::Type{FieldData{T}}) where T = ndims(T)
 Base.size(f::FieldData) = size(f.data)
+Base.copy(f::FieldData) = FieldData(copy(f.data))
+Base.ones(f::FieldData) = FieldData(ones(size(f.data)...))
+Base.zeros(f::FieldData) = FieldData(zeros(size(f.data)...))
 Base.copyto!(f::FieldData, args...) = copyto!(f.data, args...) 
 #generic setor (could add typing if concern with dimension compability) 
 Base.setindex!(f::FieldData, args...) = setindex!(f.data, args...)
@@ -36,6 +39,7 @@ VectorField(nx::Int64, ny::Int64) = VectorField((nx, ny))
 VectorField(grid::AbstractGrid) = VectorField(size(grid))
 VectorField(mhd_grid::AbstractMHDGrid) = VectorField(size(mhd_grid.grid))
 
+Base.copy(v::T) where T<:Field= get_base_type(T)((copy(getproperty(v,fn)) for fn in propertynames(v))...)
 #
 # Scalar field structure
 #
@@ -70,15 +74,24 @@ TensorField(dims::NTuple{N,Int64}) where {N} = TensorField((FieldData(zeros(dims
 TensorField(n::Int64) = TensorField((n,))
 TensorField(nx::Int64, ny::Int64) = TensorField((nx, ny))
 TensorField(grid::AbstractGrid) = TensorField(size(grid))
-
-# --- display ---
+# --------------------------------------------- #
+prettytype(N::Type) = split(string(N), ".")[end]
+# ----------------- display ------------------- #
 function Base.show(io::IO, ::MIME"text/plain", f::Field)
    for fn in propertynames(f)
     println(io, " -- $fn --")
     println(io, getproperty(f,fn).data)
    end
 end
-prettytype(N::Type) = split(string(N), ".")[end]
+
 function Base.show(io::IO, ::T) where {T<:Field}
-    print(io, "$(pretty_type(T))")
+    print(io, "$(T.name.name)")
+end
+
+function Base.show(io::IO, ::MIME"text/plain", ::Type{T}) where T<:Field
+    print(io, "$(T.name.name)")
+end
+
+function Base.show(io::IO, ::Type{T}) where T<:Field
+    print(io, "$(T.name.name)")
 end
