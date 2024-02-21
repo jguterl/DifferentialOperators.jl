@@ -8,16 +8,17 @@
 #
 # Should change the name of the object, since it collides with Base!!
 #
-Base.@kwdef struct Grid{X,Y,Z} <: AbstractGrid
+#Base.@kwdef
+Base.@kwdef struct StructuredGrid{X,Y,Z} <: AbstractGrid
     x::X = missing
     y::Y = missing
     z::Z = missing
 end
 
-Base.ones(grid::Grid)                    = ones(grid,current_backend.value)
-Base.ones(grid::Grid, backend::Backend)  = backend(ones(size(grid.x)...))
-Base.zeros(grid::Grid)                   = zeros(grid, current_backend.value)
-Base.zeros(grid::Grid, backend::Backend) = backend(zeros(size(grid.x)...))
+Base.ones(grid::StructuredGrid)                    = ones(grid,current_backend.value)
+Base.ones(grid::StructuredGrid, backend::Backend)  = backend(ones(size(grid.x)...))
+Base.zeros(grid::StructuredGrid)                   = zeros(grid, current_backend.value)
+Base.zeros(grid::StructuredGrid, backend::Backend) = backend(zeros(size(grid.x)...))
 
 
 _get_grid_points(i::Int64, dims, ng, d0, L) = (d0[i] + L[i]) / (dims[i] - 1) * (getindex.(collect(Iterators.product((1-ng[i]:d+ng[i] for d in dims)...)), i) .- 1)
@@ -27,16 +28,14 @@ get_grid_points(backend::CUDABackend, args..., )  = CUDA.CuArray(_get_grid_point
 #
 # The backend should default to CPU if nothing is set
 #
-Grid(dims::NTuple{N,Int64}; L=[1.0, 1.0, 1.0], ng=[0, 0, 0], d0=[0.0, 0.0, 0.0], backend::Backend=current_backend.value) where {N} = Grid(; (fn => get_grid_points(backend, i, dims, ng, d0, L) for ((i, d), fn) in zip(enumerate(dims), fieldnames(Grid)))...)
+StructuredGrid(dims::NTuple{N,Int64}; L=[1.0, 1.0, 1.0], ng=[0, 0, 0], d0=[0.0, 0.0, 0.0], backend::Backend=current_backend.value) where {N} = StructuredGrid(; (fn => get_grid_points(backend, i, dims, ng, d0, L) for ((i, d), fn) in zip(enumerate(dims), fieldnames(StructuredGrid)))...)
 
-Grid(nx::Int64, ny::Int64; kw...) = Grid((nx,ny); kw...)
+StructuredGrid(nx::Int64, ny::Int64; kw...) = StructuredGrid((nx,ny); kw...)
 
-Base.size(grid::Grid) = size(grid.x)
+Base.size(grid::StructuredGrid) = size(grid.x)
 
 #
 # Schedule this entire class for deletion whenever possible
-#
-# Why is there another extra parameter V that is not used?
 #
 struct GridDerivatives{X<:GridData,Y<:GridData,Z<:GridData,B} <: AbstractGridDerivatives{B}
     dx :: X
@@ -46,7 +45,7 @@ struct GridDerivatives{X<:GridData,Y<:GridData,Z<:GridData,B} <: AbstractGridDer
 end
 
 #function GridDerivatives(grid::Grid, ghost_cells::GhostCells; Kx=1, Ky=1, Kz=1)
-function GridDerivatives(grid::Grid) #, ghost_cells::GhostCells; Kx=1, Ky=1, Kz=1)
+function GridDerivatives(grid::StructuredGrid) #, ghost_cells::GhostCells; Kx=1, Ky=1, Kz=1)
     dx = grid.x .- circshift(grid.x, (1, 0))
     dy = grid.y .- circshift(grid.y, (0, 1))
     dz = missing

@@ -104,5 +104,5 @@ export compute!, compute_turbo!, compute_threads!
 
 
 
-export MHDGrid, Grid, VectorField, GridDerivatives, ScalarField, TensorField, Field, GridData
+export MHDGrid, StructuredGrid, VectorField, GridDerivatives, ScalarField, TensorField, Field, GridData
 end

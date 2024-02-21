@@ -4,13 +4,13 @@ using Symbolics
 import LinearAlgebra.norm as norm
 
 
-function compute_error(f1::ScalarField, f0::ScalarField, g::Grid, intx, inty)
+function compute_error(f1::ScalarField, f0::ScalarField, g::StructuredGrid, intx, inty)
     df = ScalarField(g)
     @. df.field.data = f1.field.data - f0.field.data
     return norm(df.field.data[intx, inty], Inf)
 end
 
-function compute_error(v1::VectorField, v0::VectorField, g::Grid, intx, inty)
+function compute_error(v1::VectorField, v0::VectorField, g::StructuredGrid, intx, inty)
     dv = VectorField(g)
     @. dv.x.data = v1.x.data - v0.x.data
     @. dv.y.data = v1.y.data - v0.y.data
@@ -68,7 +68,7 @@ for n = 1:nreps
     inty2 = 1+ng2:ny+ng2
 
     # First we create a grid that start at x=0 on the first interior point
-    local_grid = Grid(nx, ny; L=[Lx, Ly], d0=[0.0, 0.0], ng=[1, 1])
+    local_grid = StructuredGrid(nx, ny; L=[Lx, Ly], d0=[0.0, 0.0], ng=[1, 1])
 
     # We also define the data needed to calculated the derivatives (we can define order of accuracy here)
     grid_data = GridDerivatives(local_grid)
@@ -78,14 +78,14 @@ for n = 1:nreps
 
     # Staggered grids asuming half a grid point displacement
     # This is the standard finite volume grid for fluxes through faces
-    gridvˣ = Grid(nx, ny; L=[Lx, Ly], d0=[0.5 * dx, 0], ng=[1, 1])
-    gridvʸ = Grid(nx, ny; L=[Lx, Lx], d0=[0.0, 0.5 * dy], ng=[1, 1])
-    gridvᶻ = Grid(nx, ny; L=[Lx, Ly], d0=[0.0, 0.0], ng=[1, 1]) #Placehold for z grid
+    gridvˣ = StructuredGrid(nx, ny; L=[Lx, Ly], d0=[0.5 * dx, 0], ng=[1, 1])
+    gridvʸ = StructuredGrid(nx, ny; L=[Lx, Lx], d0=[0.0, 0.5 * dy], ng=[1, 1])
+    gridvᶻ = StructuredGrid(nx, ny; L=[Lx, Ly], d0=[0.0, 0.0], ng=[1, 1]) #Placehold for z grid
 
     # This is the adjoint grid produced using curl(v) 
-    gridbˣ = Grid(nx, ny; L=[Lx, Ly], d0=[0.0, 0.5 * dy], ng=[1, 1]) # 0.5*dz
-    gridbʸ = Grid(nx, ny; L=[Lx, Ly], d0=[0.5 * dx, 0.0], ng=[1, 1]) # 0.5*dz
-    gridbᶻ = Grid(nx, ny; L=[Lx, Ly], d0=[0.5 * dx, 0.5 * dy], ng=[1, 1]) #Placehold for z grid
+    gridbˣ = StructuredGrid(nx, ny; L=[Lx, Ly], d0=[0.0, 0.5 * dy], ng=[1, 1]) # 0.5*dz
+    gridbʸ = StructuredGrid(nx, ny; L=[Lx, Ly], d0=[0.5 * dx, 0.0], ng=[1, 1]) # 0.5*dz
+    gridbᶻ = StructuredGrid(nx, ny; L=[Lx, Ly], d0=[0.5 * dx, 0.5 * dy], ng=[1, 1]) #Placehold for z grid
 
     ψ = ScalarField(local_grid)
     @. ψ.field.data = cos(kx * local_grid.x) * cos(ky * local_grid.y)

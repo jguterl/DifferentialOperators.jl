@@ -1,6 +1,6 @@
-const Grid1D{X}     = Grid{X,Missing,Missing}
-const Grid2D{X,Y}   = Grid{X,Y,Missing}
-const Grid3D{X,Y,Z} = Grid{X,Y,Z}
+const Grid1D{X}     = StructuredGrid{X,Missing,Missing}
+const Grid2D{X,Y}   = StructuredGrid{X,Y,Missing}
+const Grid3D{X,Y,Z} = StructuredGrid{X,Y,Z}
 
 
 #
@@ -13,7 +13,7 @@ struct NormalVectors{SS,NN,WW,EE}
     E :: EE
 end 
 
-function NormalVectors(grid::Grid) 
+function NormalVectors(grid::StructuredGrid) 
     N = VectorField(ones(grid), zeros(grid), zeros(grid))
     S = VectorField(-ones(grid), zeros(grid), zeros(grid))
     W = VectorField(zeros(grid), -ones(grid), zeros(grid))
@@ -21,7 +21,7 @@ function NormalVectors(grid::Grid)
     return NormalVectors(N,S,W,E)
 end
 
-UnitaryVectors(grid::Grid) = VectorField(VectorField(ones(grid), zeros(grid),zeros(grid)),VectorField(zeros(grid), ones(grid),zeros(grid)),VectorField(zeros(grid), zeros(grid),ones(grid)))
+UnitaryVectors(grid::StructuredGrid) = VectorField(VectorField(ones(grid), zeros(grid),zeros(grid)),VectorField(zeros(grid), ones(grid),zeros(grid)),VectorField(zeros(grid), zeros(grid),ones(grid)))
 export MHDGrid
 
 
@@ -37,7 +37,7 @@ struct MHDGrid{G,D,I,N,U} <: AbstractMHDGrid
 end
 MHDGrid(nx::Int64, ny::Int64; kw...) = MHDGrid((nx,ny); kw...)
 function MHDGrid(dims::NTuple{N,Int64}; kw...) where N
-    grid = Grid(dims; kw...) 
+    grid = StructuredGrid(dims; kw...) 
     indexes = GridIndexes(dims; kw...)
     grid_data = GridDerivatives(grid, indexes.ghost_cells)
     n = NormalVectors(grid)

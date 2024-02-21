@@ -11,7 +11,7 @@ test_threads!(f, result) = compute_threads!(f, grid_data, result, 1+ig:nx-ig, 1+
 
 # First we create a grid 
 #grid_mhd = MHDGrid(nx, ny; L=[2π, 4π])
-grid = Grid(nx, ny; L=[2π, 4π])
+grid = StructuredGrid(nx, ny; L=[2π, 4π])
 
 # We also define the data needed to calculated the derivatives (we can define order of accuracy here)
 grid_data = GridDerivatives(grid);
@@ -82,9 +82,9 @@ B = VectorField(grid);
 
 
 # Staggered grids asuming half a grid point displacement
-grid⁺ˣ = Grid(nx, ny; L=[2π, 4π], d0=[0.5 * dx, 0])
-grid⁺ʸ = Grid(nx, ny; L=[2π, 4π], d0=[0.0, 0.5 * dy])
-grid⁺ᶻ = Grid(nx, ny; L=[2π, 4π], d0=[0.0, 0.0]) #Placehold for z grid
+grid⁺ˣ = StructuredGrid(nx, ny; L=[2π, 4π], d0=[0.5 * dx, 0])
+grid⁺ʸ = StructuredGrid(nx, ny; L=[2π, 4π], d0=[0.0, 0.5 * dy])
+grid⁺ᶻ = StructuredGrid(nx, ny; L=[2π, 4π], d0=[0.0, 0.0]) #Placehold for z grid
 
 
 # This vector is defined using a FV like grid, with different location
