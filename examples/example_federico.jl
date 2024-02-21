@@ -1,5 +1,4 @@
 using DifferentialOperators
-using Symbolics
 using BenchmarkTools
 
 import LinearAlgebra.norm as norm

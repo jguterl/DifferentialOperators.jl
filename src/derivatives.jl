@@ -68,16 +68,16 @@
 
 
 
-struct StencilCoefficients{V,W,Z, dX,dY,dZ} <: AbstractStencilCoefficients{dX,dY,dZ}
-    α_x :: V
-    α_y :: W
-    α_z:: Z
-end
+# struct StencilCoefficients{V,W,Z, dX,dY,dZ} <: AbstractStencilCoefficients{dX,dY,dZ}
+#     α_x :: V
+#     α_y :: W
+#     α_z:: Z
+# end
 
 
-@generated_stencil_coefficients_x_y 5
+# @generated_stencil_coefficients_x_y 5
 
-∂x(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = 0.5 * (op(grid_data, i + 1, j) - op(grid_data, i - 1, j)) / grid_data.dx(i, j)
-∂x(op::Union{ApplyOperator,FieldData}, stencils::StencilCoefficients{5}, i::Index, j::Index) = sum_coeff_5(op, grid_data, i,j)
+# ∂x(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = 0.5 * (op(grid_data, i + 1, j) - op(grid_data, i - 1, j)) / grid_data.dx(i, j)
+# ∂x(op::Union{ApplyOperator,FieldData}, stencils::StencilCoefficients{5}, i::Index, j::Index) = sum_coeff_5(op, grid_data, i,j)
 
-sum_coeff_5(op, grid_data, i, j) = α_x[1] + f[i-2] + α_x[2] * f[i-1] + α_x[3] * f[0] + α_x[3] + f[-2] + α_x[4] * f[i+1] + α_x[5] * f[i+2]
+# sum_coeff_5(op, grid_data, i, j) = α_x[1] + f[i-2] + α_x[2] * f[i-1] + α_x[3] * f[0] + α_x[3] + f[-2] + α_x[4] * f[i+1] + α_x[5] * f[i+2]
