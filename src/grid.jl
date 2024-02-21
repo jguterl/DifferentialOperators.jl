@@ -4,13 +4,18 @@ Base.@kwdef struct Grid{X,Y,Z} <: AbstractGrid
     y::Y = missing
     z::Z = missing
 end
-Base.ones(grid::Grid) = ones(size(grid.x)...)
-Base.zeros(grid::Grid) = zeros(size(grid.x)...)
+Base.ones(grid::Grid) = ones(grid,current_backend.value)
+Base.zeros(grid::Grid) = zeros(grid, current_backend.value)
+Base.ones(grid::Grid, backend::Backend) = backend(ones(size(grid.x)...))
+Base.zeros(grid::Grid, backend::Backend) = backend(zeros(size(grid.x)...))
 const Grid1D{X} = Grid{X,Missing,Missing}
 const Grid2D{X,Y} = Grid{X,Y,Missing}
 const Grid3D{X,Y,Z} = Grid{X,Y,Z}
 
-Grid(dims::NTuple{N,Int64}; L=[1.0, 1.0, 1.0], d0=[0.0, 0.0, 0.0]) where {N} = Grid(; (fn => (d0[i] + L[i]) / (dims[i] - 1) * (getindex.(collect(Iterators.product((1:d for d in dims)...)), i) .- 1) for ((i, d), fn) in zip(enumerate(dims), fieldnames(Grid)))...)
+_get_grid_points(i::Int64, dims, d0, L) = (d0[i] + L[i]) / (dims[i] - 1) * (getindex.(collect(Iterators.product((1:d for d in dims)...)), i) .- 1)
+get_grid_points(backend::CPUBackend, args..., ) = _get_grid_points(args...)
+get_grid_points(backend::CUDABackend, args..., ) = CUDA.CuArray(_get_grid_points(args...))
+Grid(dims::NTuple{N,Int64}; L=[1.0, 1.0, 1.0], d0=[0.0, 0.0, 0.0], backend::Backend=current_backend.value) where {N} = Grid(; (fn => get_grid_points(backend, i, dims, d0, L) for ((i, d), fn) in zip(enumerate(dims), fieldnames(Grid)))...)
 Grid(nx::Int64, ny::Int64; kw...) = Grid((nx,ny); kw...)
 Base.size(grid::Grid) = size(grid.x)
 
@@ -32,16 +37,23 @@ struct GridIndexes{I<:IndexIterators}
     outer_iter::I
 end
 
+struct IndexIterator{I}
+    start:: I
+    stop :: I
+end
+IndexIterator(r::UnitRange) = IndexIterator(r.start,r.stop)
 get_dims(dims::NTuple{1,Int64}) = dims[1], missing, missing
 get_dims(dims::NTuple{2,Int64}) = dims[1], dims[2], missing
 get_dims(dims::NTuple{3,Int64}) = dims[1], dims[2], dims[3]
-IndexIterator(n::Int64, n_gc::Int64) = 1+n_gc:n-n_gc
-IndexIterator(n::Missing, n_gc::Int64) = missing
+IndexIterator(n_start::Int64, n::Int64, n_gc::Int64) = n_start+n_gc:n-n_gc
+IndexIterator(n_start::Int64, n::Missing, n_gc::Int64) = missing
+export IndexIterator
+
 function GridIndexes(dims::NTuple{N,Int64}; nx_gc=1, ny_gc=1, nz_gc=1, kw...) where N
     nx,ny, nz = get_dims(dims)
     gc = GhostCells(nx_gc, ny_gc, nz_gc)
-    inner_iter = IndexIterators(IndexIterator(nx, nx_gc), IndexIterator(ny, ny_gc), IndexIterator(nz, nz_gc))
-    outer_iter = IndexIterators(IndexIterator(nx, 0), IndexIterator(ny, 0), IndexIterator(nz, 0))
+    inner_iter = IndexIterators(IndexIterator(1,nx, nx_gc), IndexIterator(1,ny, ny_gc), IndexIterator(1,nz, nz_gc))
+    outer_iter = IndexIterators(IndexIterator(1,nx, 0), IndexIterator(1,ny, 0), IndexIterator(1,nz, 0))
     GridIndexes(gc, inner_iter, outer_iter)
 end
 
@@ -88,10 +100,12 @@ end
 
 
 
-struct GridDerivatives{X,Y,Z} <: AbstractGridDerivatives
+struct GridDerivatives{X<:GridData,Y<:GridData,Z<:GridData,V,B} <: AbstractGridDerivatives{B}
     dx :: X
     dy :: Y
     dz :: Z
+    zero_values :: V
+    backend::B
 end 
 function GridDerivatives(grid::Grid; Kx=1, Ky=1, Kz=1)
     dx = grid.x .- circshift(grid.x, (1, 0))
@@ -100,7 +114,14 @@ function GridDerivatives(grid::Grid; Kx=1, Ky=1, Kz=1)
     GridDerivatives(GridData(dx), GridData(dy), GridData(dz))
 end
 
+GridDerivatives(x::AbstractGridData{B}, y::AbstractGridData{B}, z::AbstractGridData{B}) where {B<:Backend} = GridDerivatives(x,y ,z, B())
+GridDerivatives(x::AbstractGridData{B}, y::AbstractGridData{B}, z::AbstractGridData{B}, backend::B) where {B} = GridDerivatives(x, y, z, backend(zeros(size(x)...)), backend)
+zero_value_array(grid_data::GridDerivatives,i::Index,j::Index) = grid_data.zero_values[i,j]
+get_dx(grid_data::GridDerivatives) = CUDA.@allowscalar grid_data.dx.data[2, 2]
+get_dy(grid_data::GridDerivatives) = CUDA.@allowscalar grid_data.dy.data[2, 2]
+Adapt.@adapt_structure GridDerivatives
 
+export get_dx, get_dy
 # -- junk ----
 # derivative operators
 # abstract type DerivativeOperator{K} end
