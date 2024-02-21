@@ -1,5 +1,23 @@
+
+struct ApplyOperator{D, V, O <: Operator, C <: AbstractComponent} <: AbstractApplyOperator{O}
+    data::D
+    var::V
+    o::O
+    component::C
+end
+
+
+
+ApplyOperatorX(d, v, o) = ApplyOperator(d, v, o, XComponent())
+ApplyOperatorY(d, v, o) = ApplyOperator(d, v, o, YComponent())
+ApplyOperatorZ(d, v, o) = ApplyOperator(d, v, o, ZComponent())
+ApplyOperatorScalar(d, v, o) = ApplyOperator(d, v, o, ScalarComponent())
+Adapt.@adapt_structure ApplyOperator
+export ApplyOperator
+
+
 #Product
-struct ProductOperator     <: Operator end
+# struct ProductOperator     <: Operator end #not needed
 struct ScalarProductOperator      <: Operator end #TODO:where does it belong -> center?
 struct ContractionOperator <: Operator end #TODO:where does it belong -> center?
 struct CrossProductOperator <: Operator end #TODO:where does it belong -> center?
@@ -29,7 +47,7 @@ GenericOperator(T) = GenericOperator{T}()
 (op::ApplyOperator{D,V,GenericOperator{O},ScalarComponent})(args...) where {O,D<:ScalarField,V<:ScalarField} = O(op.var.field(args...), op.data.field(args...))
 (op::ApplyOperator{D,V,GenericOperator{O},XComponent})(args...) where {O,D<:Float64,V<:VectorField} = O(op.var.x(args...), op.data)
 (op::ApplyOperator{D,V,GenericOperator{O},YComponent})(args...) where {O,D<:Float64,V<:VectorField} = O(op.var.y(args...), op.data)
-(op::ApplyOperator{D,V,GenericOperator{O},ZComponent})(args...) where {O,D<:Float64,V<:VectorField} = O(op.var.Z(args...), op.data)
+(op::ApplyOperator{D,V,GenericOperator{O},ZComponent})(args...) where {O,D<:Float64,V<:VectorField} = O(op.var.z(args...), op.data)
 (op::ApplyOperator{D,V,GenericOperator{O},XComponent})(args...) where {O,D<:ScalarField,V<:VectorField} = O(op.var.x(args...), op.data.field(args...),)
 (op::ApplyOperator{D,V,GenericOperator{O},YComponent})(args...) where {O,D<:ScalarField,V<:VectorField} = O(op.var.y(args...), op.data.field(args...),)
 (op::ApplyOperator{D,V,GenericOperator{O},ZComponent})(args...) where {O,D<:ScalarField,V<:VectorField} = O(op.var.Z(args...), op.data.field(args...),)
@@ -190,7 +208,7 @@ Gradient⁻{D,V}     = AbstractOperator{D,V,Gradient⁻Operator}
 #
 # Product operations defining ∇⋅, ∇×, scalar product
 #
-Product{D,V}  = AbstractOperator{D,V,ProductOperator}
+#Product{D,V}  = AbstractOperator{D,V,ProductOperator}
 
 #TODO: Check dot and cross product. 
 #TODO: Verify commutativity! 
@@ -198,8 +216,8 @@ Product{D,V}  = AbstractOperator{D,V,ProductOperator}
 ×(::Type{∇}, v::VectorField) = VectorField(nothing, v, CurlOperator()) #non-commutative operator
 ×(::Type{∇⁺}, v::VectorField) = VectorField(nothing, v, Curl⁺Operator()) #non-commutative operator
 ×(::Type{∇⁻}, v::VectorField) = VectorField(nothing, v, Curl⁻Operator())#non-commutative operator
-×(s::Float64, var::VectorField) = VectorField(s, var, ProductOperator()) #commutative operator
-×(var::VectorField, s::Float64,) = VectorField(s, var, ProductOperator())#commutative operator
+×(a::T, b::U) where {T<:Float64,U<:Field} = get_base_type(U)(a, b, GenericOperator(*)) #commutative operator
+×(a::U, b::T) where {T<:Float64,U<:Field} = get_base_type(U)(b, a, GenericOperator(*)) #commutative operator
 
  # #non-commutative operator
 ×(a::ScalarField, b::VectorField) = VectorField(a, b, ProductOperator()) #commutative operator

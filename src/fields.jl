@@ -4,6 +4,7 @@ struct GridData{T,B<:Backend} <: AbstractGridData{B}
     backend::B
 end
 GridData(data) = GridData(current_backend(data), current_backend.value)
+Base.size(g::GridData) = size(g.data)
 Adapt.@adapt_structure GridData
 
 struct FieldData{T,B<:Backend} <: AbstractFieldData{B}
@@ -14,10 +15,10 @@ end
 FieldData(data) = FieldData(current_backend(data), current_backend.value)
 Adapt.@adapt_structure FieldData
 # accesssor
-(d::GridData)(i, j) = d.data[i, j]
+(d::GridData)(i::Index, j::Index) = d.data[i, j]
 
-(d::FieldData{T,B})(grid_data::AbstractGridDerivatives, i, j) where {T,B} = d.data[i, j]
-(d::FieldData{T,B})(i, j) where {T,B} = d.data[i, j]
+(d::FieldData{T,B})(grid_data::AbstractGridDerivatives, i::Index, j::Index) where {T,B} = d.data[i, j]
+(d::FieldData{T,B})(i::Index, j::Index) where {T,B} = d.data[i, j]
 Base.ndims(::Type{FieldData{T,B}}) where {T,B} = ndims(T)
 Base.size(f::FieldData) = size(f.data)
 Base.copy(f::FieldData) = FieldData(copy(f.data))
@@ -96,17 +97,18 @@ function Base.show(io::IO, ::MIME"text/plain", f::Field)
    end
 end
 
-function Base.show(io::IO, f::Field)
-    print(io, "$(typeof(f).name.name)")
-end
+# function Base.show(io::IO, f::Field)
+    
+#     print(io, "$(typeof(f).name.name)")
+# end
 
 
 
-function Base.show(io::IO, ::MIME"text/plain", G::Type{T}) where T<:Field
+# function Base.show(io::IO, ::MIME"text/plain", G::Type{T}) where T<:Field
 
-    print(io, "$(G.name.name)")
-end
+#     print(io, "$(G.name.name)")
+# end
 
-function Base.show(io::IO, G::Type{T}) where T<:Field
-    print(io, "$(G.name.name)")
-end
+# function Base.show(io::IO, G::Type{T}) where T<:Field
+#     print(io, "$(G.name.name)")
+# end

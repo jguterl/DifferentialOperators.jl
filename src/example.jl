@@ -1,13 +1,13 @@
 using DifferentialOperators
 using BenchmarkTools
-
+set_backend!(:cpu)
 # A wrapper for testing (f is the operator we are interested in)
+
+# Grid sizes
+nx, ny = 1000, 1000
 ig = 2
 test!(f, result) = compute!(f, grid_data, result, 1+ig:nx-ig, 1+ig:ny-ig)
 test_threads!(f, result) = compute_threads!(f, grid_data, result, 1+ig:nx-ig, 1+ig:ny-ig)
-
-# Grid sizes
-nx, ny = 128, 256
 
 # First we create a grid 
 grid_mhd = MHDGrid(nx, ny; L=[2π, 4π])
