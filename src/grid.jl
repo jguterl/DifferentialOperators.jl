@@ -90,9 +90,9 @@ struct MHDGrid{G,D,I,N,U} <: AbstractMHDGrid
 end
 MHDGrid(nx::Int64, ny::Int64; kw...) = MHDGrid((nx,ny); kw...)
 function MHDGrid(dims::NTuple{N,Int64}; kw...) where N
-    grid = Grid(dims; kw...)
-    grid_data = GridDerivatives(grid)
+    grid = Grid(dims; kw...) 
     indexes = GridIndexes(dims; kw...)
+    grid_data = GridDerivatives(grid, indexes.ghost_cells)
     n = NormalVectors(grid)
     e = UnitaryVectors(grid)
     MHDGrid(grid, grid_data, indexes, n, e)
@@ -104,21 +104,39 @@ struct GridDerivatives{X<:GridData,Y<:GridData,Z<:GridData,V,B} <: AbstractGridD
     dx :: X
     dy :: Y
     dz :: Z
-    zero_values :: V
     backend::B
 end 
-function GridDerivatives(grid::Grid; Kx=1, Ky=1, Kz=1)
+function GridDerivatives(grid::Grid, ghost_cells::GhostCells; Kx=1, Ky=1, Kz=1)
     dx = grid.x .- circshift(grid.x, (1, 0))
     dy = grid.y .- circshift(grid.y, (0, 1))
     dz = missing
+    set_dx_ghost_cells!(dx, ghost_cells)
+    set_dy_ghost_cells!(dy, ghost_cells)
     GridDerivatives(GridData(dx), GridData(dy), GridData(dz))
 end
 
+# TODO: FH check that
+function set_dx_ghost_cells!(dx, ghost_cells::GhostCells) 
+    ghost_cells.nx == 0 && return 
+    dx[1:1+ghost_cells.nx-1]  = dx[1+ghost_cells.nx] 
+    dx[end-ghost_cells.nx+1:end]  = dx[end-ghost_cells.nx]
+end
+
+# TODO: FH check that
+function set_dy_ghost_cells!(dy, ghost_cells::GhostCells)
+    ghost_cells.ny == 0 && return
+    dy[1:1+ghost_cells.ny-1] = dy[1+ghost_cells.ny]
+    dy[end-ghost_cells.ny+1:end] = dy[end-ghost_cells.ny]
+end
+
+
+
 GridDerivatives(x::AbstractGridData{B}, y::AbstractGridData{B}, z::AbstractGridData{B}) where {B<:Backend} = GridDerivatives(x,y ,z, B())
-GridDerivatives(x::AbstractGridData{B}, y::AbstractGridData{B}, z::AbstractGridData{B}, backend::B) where {B} = GridDerivatives(x, y, z, backend(zeros(size(x)...)), backend)
-zero_value_array(grid_data::GridDerivatives,i::Index,j::Index) = grid_data.zero_values[i,j]
-get_dx(grid_data::GridDerivatives) = CUDA.@allowscalar grid_data.dx.data[2, 2]
-get_dy(grid_data::GridDerivatives) = CUDA.@allowscalar grid_data.dy.data[2, 2]
+
+get_dx(grid_data::GridDerivatives) = CUDA.@allowscalar grid_data.dx.data[3, 3] #TODO: this is wrong if  ng c >2 
+
+get_dy(grid_data::GridDerivatives) = CUDA.@allowscalar grid_data.dy.data[3, 3] # TODO: this is wrong if  ng c >2 
+
 Adapt.@adapt_structure GridDerivatives
 
 export get_dx, get_dy

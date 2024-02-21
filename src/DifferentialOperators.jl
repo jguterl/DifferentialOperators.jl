@@ -35,6 +35,7 @@ include("operators.jl")
 include("grid.jl")
 include("derivatives.jl")
 
+# Be careful with the INBOUNDS that remove check of out of bound indexes
 function compute!(op::ScalarField, grid_data::AbstractGridDerivatives, v::ScalarField, i::Int64, j::Int64)
     @inbounds v.field[i, j] = op.field(grid_data, i, j)
     nothing
@@ -75,7 +76,7 @@ function compute!(op::Union{TensorField,ScalarField,VectorField}, grid_data::Abs
 end
 
 compute_threads!(op, grid_data::AbstractGridDerivatives{B}, v, i_::IndexIterator, j_::IndexIterator) where {B<:CPUBackend} = compute_threads!(op, grid_data, v, i_.start:i_.stop, j_.start:j_.stop)
-function compute_threads!(op::Union{TensorField,ScalarField,VectorField}, grid_data::AbstractGridDerivatives, v::VectorField, i_::UnitRange, j_::UnitRange)
+function compute_threads!(op::Union{TensorField,ScalarField,VectorField}, grid_data::AbstractGridDerivatives{B}, v::VectorField, i_::UnitRange, j_::UnitRange) where {B<:CPUBackend}
     Threads.@threads for j in j_
                         for i in i_
                             compute!(op, grid_data, v, i, j)
@@ -87,12 +88,12 @@ end
 
 export compute!, compute_turbo!, compute_threads!
 
-function (op::VectorField{X,Y,Z})(grid_data::AbstractGridDerivatives, v::VectorField,  i::Int64, j::Int64)  where {X,Y,Z}
-    v.x[i, j] = op.x(grid_data, i, j)
-    v.y[i, j] = op.y(grid_data,i, j)
-    v.z[i, j] = op.z(grid_data,i, j)
-    nothing
-end
+# function (op::VectorField{X,Y,Z})(grid_data::AbstractGridDerivatives, v::VectorField,  i::Int64, j::Int64)  where {X,Y,Z}
+#     v.x[i, j] = op.x(grid_data, i, j)
+#     v.y[i, j] = op.y(grid_data,i, j)
+#     v.z[i, j] = op.z(grid_data,i, j)
+#     nothing
+# end
 
 
 
