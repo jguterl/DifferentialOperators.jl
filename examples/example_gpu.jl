@@ -8,7 +8,7 @@ test!(f, result) = CUDA.@sync @cuda compute!(f, grid_data, result, IndexIterator
 
 set_backend!(:cuda)
 # Grid sizes
-nx, ny = 1000, 1000
+nx, ny = 100, 100
 
 # First we create a grid 
 grid_mhd = MHDGrid(nx, ny; L=[2π, 4π])
@@ -136,6 +136,9 @@ print("Test composition ∇×(previous calculation)\n")
 # @btime test_threads!($f4, $r4)
 
 # let's also do a gradient for fun
+#
+# Doesn't exist yet, and should not work
+#
 f5 = ∇⋅(B)
 r5 = VectorField(grid)
 print("Test ∇(B)\n")

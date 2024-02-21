@@ -2,6 +2,8 @@ module DifferentialOperators
 
 include("backend.jl")
 export set_backend!
+export check_backend!
+
 abstract type AbstractGrid end 
 abstract type AbstractMHDGrid end
 abstract type AbstractGridDerivatives{B<:Backend} end 
@@ -33,8 +35,12 @@ get_base_type(T::DataType) = T.name.wrapper
 include("fields.jl")
 include("operators.jl")
 include("grid.jl")
+include("junk.jl")
 include("derivatives.jl")
 
+#
+# This is likely wrong since vector to scalar and vice-verse aren't here anymore
+#
 # Be careful with the INBOUNDS that remove check of out of bound indexes
 function compute!(op::ScalarField, grid_data::AbstractGridDerivatives, v::ScalarField, i::Int64, j::Int64)
     @inbounds v.field[i, j] = op.field(grid_data, i, j)
@@ -98,5 +104,5 @@ export compute!, compute_turbo!, compute_threads!
 
 
 
-export MHDGrid, Grid, VectorField, GridDerivatives, ScalarField, TensorField, Field
+export MHDGrid, Grid, VectorField, GridDerivatives, ScalarField, TensorField, Field, GridData
 end

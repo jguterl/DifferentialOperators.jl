@@ -19,6 +19,9 @@
 # ∂z⁻(v::FieldData, grid_data::AbstractGridDerivatives, i::Index, j::Index) = 0
 
 # This looks like operations for stretched grids -- I'll just replicate for ∂x⁺, ∂x⁻, etc but I'll ask JG
+#
+# This is just stupid. 50 different costructors just to know dx and dy
+#
 ∂x(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = 0.5 * (op(grid_data, i + 1, j) - op(grid_data, i - 1, j)) / grid_data.dx(i, j)
 ∂y(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = 0.5 * (op(grid_data, i, j + 1) - op(grid_data, i, j - 1)) / grid_data.dy(i, j)
 ∂z(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = 0.0 #zero_value_array(grid_data, i,j)
@@ -27,14 +30,16 @@
 ∂y⁺(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = (op(grid_data, i, j + 1) - op(grid_data, i, j)) / grid_data.dy(i, j)
 ∂z⁺(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = 0.0 #zero_value_array(grid_data,i,j)
 
-∂x⁻(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = (op(grid_data, i, j) - op(grid_data, i - 1, j)) / grid_data.dx(i-1, j)
-∂y⁻(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = (op(grid_data, i, j) - op(grid_data, i, j - 1)) / grid_data.dy(i, j-1)
+∂x⁻(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = (op(grid_data, i, j) - op(grid_data, i - 1, j)) / grid_data.dx(i, j)
+∂y⁻(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = (op(grid_data, i, j) - op(grid_data, i, j - 1)) / grid_data.dy(i, j)
 ∂z⁻(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = 0.0 #zero_value_array(grid_data,i,j)
 
 #Centered differences
 ∂x²(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = (op(grid_data, i + 1, j) - 2 * op(grid_data, i, j) + op(grid_data, i - 1, j)) / grid_data.dx(i, j)^2
 ∂y²(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = (op(grid_data, i, j + 1) - 2 * op(grid_data, i, j) + op(grid_data, i, j - 1)) / grid_data.dy(i, j)^2
 ∂z²(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = 0.0
+
+
 # Fix federico  -> 
 #TODO set dx[i,j] for i,j in ghoest cell = dx[boundary] (see grid.jl for that fix)
 # ∂x(v::FieldData, grid_data::AbstractGridDerivatives, i::Int64, j::Int64) = 0.5 * (v(i + 1, j) - v(i - 1, j)) / grid_data.dx(3, 3)

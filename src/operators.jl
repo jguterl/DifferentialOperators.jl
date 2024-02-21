@@ -6,7 +6,9 @@ struct ApplyOperator{D, V, O <: Operator, C <: AbstractComponent} <: AbstractApp
     component::C
 end
 
-
+#
+# Here we need extensive breaking apart into files and rearrangement
+#
 
 ApplyOperatorX(d, v, o) = ApplyOperator(d, v, o, XComponent())
 ApplyOperatorY(d, v, o) = ApplyOperator(d, v, o, YComponent())
@@ -18,9 +20,9 @@ export ApplyOperator
 
 #Product
 # struct ProductOperator     <: Operator end #not needed
-struct ScalarProductOperator      <: Operator end #TODO:where does it belong -> center?
-struct ContractionOperator <: Operator end #TODO:where does it belong -> center?
-struct CrossProductOperator <: Operator end #TODO:where does it belong -> center?
+struct ScalarProductOperator <: Operator end #TODO:where does it belong -> center?
+struct ContractionOperator   <: Operator end #TODO:where does it belong -> center?
+struct CrossProductOperator  <: Operator end #TODO:where does it belong -> center?
 
 #Centered operators
 struct CurlOperator        <: Operator end
@@ -40,17 +42,22 @@ struct Divergence⁻Operator <: Operator end
 
 struct GenericOperator{T}  <: Operator end
 GenericOperator(T) = GenericOperator{T}()
+
 # generic operator
+#
+# What the hell is this??? CHange the name O to something else, can be confused with 0, really bad practice to use a single char
+# anywhere except indices
+#
 (op::ApplyOperator{D,V,GenericOperator{O},XComponent})(args...) where {O,D<:VectorField,V<:VectorField} = O(op.var.x(args...), op.data.x(args...))
 (op::ApplyOperator{D,V,GenericOperator{O},YComponent})(args...) where {O,D<:VectorField,V<:VectorField} = O(op.var.y(args...), op.data.y(args...))
 (op::ApplyOperator{D,V,GenericOperator{O},ZComponent})(args...) where {O,D<:VectorField,V<:VectorField} = O(op.var.z(args...), op.data.z(args...))
 (op::ApplyOperator{D,V,GenericOperator{O},ScalarComponent})(args...) where {O,D<:ScalarField,V<:ScalarField} = O(op.var.field(args...), op.data.field(args...))
-(op::ApplyOperator{D,V,GenericOperator{O},XComponent})(args...) where {O,D<:Float64,V<:VectorField} = O(op.var.x(args...), op.data)
-(op::ApplyOperator{D,V,GenericOperator{O},YComponent})(args...) where {O,D<:Float64,V<:VectorField} = O(op.var.y(args...), op.data)
-(op::ApplyOperator{D,V,GenericOperator{O},ZComponent})(args...) where {O,D<:Float64,V<:VectorField} = O(op.var.z(args...), op.data)
-(op::ApplyOperator{D,V,GenericOperator{O},XComponent})(args...) where {O,D<:ScalarField,V<:VectorField} = O(op.var.x(args...), op.data.field(args...),)
-(op::ApplyOperator{D,V,GenericOperator{O},YComponent})(args...) where {O,D<:ScalarField,V<:VectorField} = O(op.var.y(args...), op.data.field(args...),)
-(op::ApplyOperator{D,V,GenericOperator{O},ZComponent})(args...) where {O,D<:ScalarField,V<:VectorField} = O(op.var.Z(args...), op.data.field(args...),)
+(op::ApplyOperator{D,V,GenericOperator{O},XComponent})(args...) where {O,D<:Float64    ,V<:VectorField}  = O(op.var.x(args...), op.data)
+(op::ApplyOperator{D,V,GenericOperator{O},YComponent})(args...) where {O,D<:Float64    ,V<:VectorField}  = O(op.var.y(args...), op.data)
+(op::ApplyOperator{D,V,GenericOperator{O},ZComponent})(args...) where {O,D<:Float64    ,V<:VectorField}  = O(op.var.z(args...), op.data)
+(op::ApplyOperator{D,V,GenericOperator{O},XComponent})(args...) where {O,D<:ScalarField,V<:VectorField}  = O(op.var.x(args...), op.data.field(args...),)
+(op::ApplyOperator{D,V,GenericOperator{O},YComponent})(args...) where {O,D<:ScalarField,V<:VectorField}  = O(op.var.y(args...), op.data.field(args...),)
+(op::ApplyOperator{D,V,GenericOperator{O},ZComponent})(args...) where {O,D<:ScalarField,V<:VectorField}  = O(op.var.Z(args...), op.data.field(args...),)
 (op::ApplyOperator{D,V,GenericOperator{O},ScalarComponent})(args...) where {O,D<:Float64,V<:ScalarField} = O(op.var.field(args...), op.data)
 
 # # multiply
@@ -84,18 +91,12 @@ GenericOperator(T) = GenericOperator{T}()
 (op::ApplyOperator{D,V,GradientOperator,XComponent})(args...) where {D,V} = ∂x(op.var.field, args...)
 (op::ApplyOperator{D,V,GradientOperator,YComponent})(args...) where {D,V} = ∂y(op.var.field, args...)
 (op::ApplyOperator{D,V,GradientOperator,ZComponent})(args...) where {D,V} = ∂z(op.var.field, args...)
-# This looks like ( diag ( grad ( V ) ) )
-# (op::ApplyOperator{D,V,GradientOperator,XComponent})(args...) where {D,V} = ∂x(op.var.x, args...)
-# (op::ApplyOperator{D,V,GradientOperator,YComponent})(args...) where {D,V} = ∂y(op.var.y, args...)
-# (op::ApplyOperator{D,V,GradientOperator,ZComponent})(args...) where {D,V} = ∂z(op.var.z, args...)
 
 # divergence --- vector into scalar
 (op::ApplyOperator{D,V,DivergenceOperator,ScalarComponent})(args...) where {D,V} = ∂x(op.var.x, args...) + ∂y(op.var.y, args...) + ∂z(op.var.z, args...)
 
 # laplacian --- scalar into scalar
 (op::ApplyOperator{D,V,LaplacianOperator,ScalarComponent})(args...) where {D,V} = ∂x²(op.var.field, args...) + ∂y²(op.var.field, args...) + ∂z²(op.var.field, args...)
-#(op::ApplyOperator{D,V,LaplacianOperator,YComponent})(args...) where {D,V} = ∂x²(op.var.y, args...) + ∂y²(op.var.y, args...) + ∂z²(op.var.y, args...)
-#(op::ApplyOperator{D,V,LaplacianOperator,ZComponent})(args...) where {D,V} = ∂x²(op.var.z, args...) + ∂y²(op.var.z, args...) + ∂z²(op.var.z, args...)
 
 #
 # Forward staggered
@@ -148,6 +149,9 @@ Gradient{D,V}      = AbstractOperator{D,V,GradientOperator}
 #∇(v::TensorVectorField) = VectorField(nothing, v, GradientOperator())
 
 # ---- time operator-----
+#
+# This should not be here, and it's also likely not even needed
+#
 abstract type Apply∂ₜ{C} end 
 
 function Apply∂ₜ{C}(Δt::Float64, v :: Union{Field,ApplyOperator}, order) where {C}
@@ -249,4 +253,7 @@ Base.:/(a::T, b::U) where {T<:Union{Float64},U<:Field} = get_base_type(U)(b, a, 
 VectorField(d, v, o::Operator)  = VectorField(ApplyOperatorX(d, v, o), ApplyOperatorY(d, v, o), ApplyOperatorZ(d, v, o))
 ScalarField(d, v, o::Operator)  = ScalarField(ApplyOperatorScalar(d, v, o))
 
+#
+# What is the wiggly product
+#
 export ∇, ∇², ∇⁺, ∇⁻, ×, ⋅, ∻, ∂ₜ

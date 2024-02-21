@@ -1,4 +1,6 @@
-
+#
+# Type definitions and constructors spread over files
+#
 struct GridData{T,B<:Backend} <: AbstractGridData{B}
     data::T
     backend::B

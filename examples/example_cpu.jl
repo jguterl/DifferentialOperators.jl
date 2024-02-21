@@ -4,13 +4,13 @@ set_backend!(:cpu)
 # A wrapper for testing (f is the operator we are interested in)
 
 # Grid sizes
-nx, ny = 1000, 1000
+nx, ny = 100, 100
 ig = 2
 test!(f, result) = compute!(f, grid_data, result, 1+ig:nx-ig, 1+ig:ny-ig)
 test_threads!(f, result) = compute_threads!(f, grid_data, result, 1+ig:nx-ig, 1+ig:ny-ig)
 
 # First we create a grid 
-grid_mhd = MHDGrid(nx, ny; L=[2π, 4π])
+#grid_mhd = MHDGrid(nx, ny; L=[2π, 4π])
 grid = Grid(nx, ny; L=[2π, 4π])
 
 # We also define the data needed to calculated the derivatives (we can define order of accuracy here)
@@ -136,10 +136,13 @@ print("Test composition ∇×(previous calculation), threaded\n")
 @btime test_threads!($f4, $r4)
 
 # let's also do a gradient for fun
-f5 = ∇(B)
-r5 = VectorField(grid)
-print("Test ∇(B)\n")
-@btime test!($f5, $r5)
+#
+# This operation does not exist yet
+#
+#f5 = ∇(B)
+#r5 = VectorField(grid)
+#print("Test ∇(B)\n")
+#@btime test!($f5, $r5)
 
 f6 = ∇ ⋅ (B)
 r6 = ScalarField(grid)

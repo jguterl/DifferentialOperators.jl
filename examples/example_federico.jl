@@ -1,6 +1,6 @@
 using DifferentialOperators
 using BenchmarkTools
-
+using Symbolics
 import LinearAlgebra.norm as norm
 
 
@@ -217,54 +217,3 @@ print("Error for unstaggered operations vs number of points\n")
 print("∇ψ.x , ∇ψ.y, ∇²ψ, (∇×∇ψ).x, (∇×∇ψ).y\n")
 display(num_err)
 print("\n\n")
-
-# Let's do a series of test 
-# First a simple product scalar times B
-#η = 10.0;
-#f1 = (η × B);
-#r1 = VectorField(grid) # this is the result of the operator applied onto B or whateve#r field in the definition of f
-#print("Test η×B\n")
-#@btime test!($f1, $r1)
-
-# Then the curl
-#f2 = ((∇⁺ × B));
-#r2 = VectorField(grid)
-#print("Test ∇⁺×B\n")
-#@btime test!($f2, $r2)
-
-# Combine 1 and 2 
-#f3 = (η × (∇ × B))
-#r3 = VectorField(grid)
-#print("Test η×∇×B\n")
-#@btime test!($f3, $r3)
-
-# Finally something useful...
-#f4 = ∇⁻ × (η × (∇⁺ × B))
-#r4 = VectorField(grid)
-#print("Test ∇⁻×η×∇⁺×B\n")
-#@btime test!($f4, $r4)
-
-# We can also compose at will
-#f4 = ∇ × (f3)
-#r4 = VectorField(grid)
-#print("Test composition ∇×(previous calculation)\n")
-#@btime test!($f4, $r4)
-
-# Some acceleration...
-#f4 = ∇ × (η × (∇ × B))
-#r4 = VectorField(grid)
-#print("Test composition ∇×(previous calculation), threaded\n")
-#@btime test_threads!($f4, $r4)
-
-#let's also do a gradient for fun
-#f5 = ∇(B)
-#r5 = VectorField(grid)
-#print("Test ∇(B)\n")
-#@btime test!($f5, $r5)
-
-#f6 = ∇⋅(B)
-#r6 = ScalarField(grid)
-#print("Test ∇⋅(B)\n")
-#@btime test!($f6, $r6)
-# the final call to the operator is inline and can be adjusted. It requires data for differentiation.
-# This can be dispatched to setup different order of differentation 
