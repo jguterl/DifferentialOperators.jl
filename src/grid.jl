@@ -21,16 +21,28 @@ Base.zeros(grid::StructuredGrid)                   = zeros(grid, current_backend
 Base.zeros(grid::StructuredGrid, backend::Backend) = backend(zeros(size(grid.x)...))
 
 
-_get_grid_points(i::Int64, dims, ng, d0, L) = (d0[i] + L[i]) / (dims[i] - 1) * (getindex.(collect(Iterators.product((1-ng[i]:d+ng[i] for d in dims)...)), i) .- 1)
-get_grid_points(backend::CPUBackend , args..., )  = _get_grid_points(args...)
-get_grid_points(backend::CUDABackend, args..., )  = CUDA.CuArray(_get_grid_points(args...))
+function _get_grid_points(i::Int64, dims, ng, d0, L)
+   return (d0[i] + L[i]) / (dims[i] - 1) * ( getindex.(collect(Iterators.product((1-ng[i]:d+ng[i] for d in dims)...)), i) .- 1 )
+end
+
+function get_grid_points(backend::CPUBackend , args..., )
+    return _get_grid_points(args...)
+end
+
+function get_grid_points(backend::CUDABackend, args..., )
+    return CUDA.CuArray(_get_grid_points(args...))
+end
 
 #
 # The backend should default to CPU if nothing is set
 #
-StructuredGrid(dims::NTuple{N,Int64}; L=[1.0, 1.0, 1.0], ng=[0, 0, 0], d0=[0.0, 0.0, 0.0], backend::Backend=current_backend.value) where {N} = StructuredGrid(; (fn => get_grid_points(backend, i, dims, ng, d0, L) for ((i, d), fn) in zip(enumerate(dims), fieldnames(StructuredGrid)))...)
-
-StructuredGrid(nx::Int64, ny::Int64; kw...) = StructuredGrid((nx,ny); kw...)
+function StructuredGrid(dims::NTuple{N,Int64}; L=[1.0, 1.0, 1.0], ng=[0, 0, 0], d0=[0.0, 0.0, 0.0], backend::Backend=current_backend.value) where {N}
+    return StructuredGrid(; (fn => get_grid_points(backend, i, dims, ng, d0, L) for ((i, d), fn) in zip(enumerate(dims), fieldnames(StructuredGrid)))...)
+end
+    
+function StructuredGrid(nx::Int64, ny::Int64; kw...)
+    return StructuredGrid((nx,ny); kw...)
+end
 
 Base.size(grid::StructuredGrid) = size(grid.x)
 
@@ -44,10 +56,13 @@ struct GridDerivatives{X<:GridData,Y<:GridData,Z<:GridData,B} <: AbstractGridDer
     backend::B
 end
 
+#
+# Get rid of this entire class, for now hack to get the correct spacings -- uniform everywhere
+#
 #function GridDerivatives(grid::Grid, ghost_cells::GhostCells; Kx=1, Ky=1, Kz=1)
 function GridDerivatives(grid::StructuredGrid) #, ghost_cells::GhostCells; Kx=1, Ky=1, Kz=1)
-    dx = grid.x .- circshift(grid.x, (1, 0))
-    dy = grid.y .- circshift(grid.y, (0, 1))
+    dx = 0*grid.x .+ ( grid.x[2,1] - grid.x[1,1] ) #grid.x .- circshift(grid.x, (1, 0))
+    dy = 0*grid.y .+ ( grid.y[1,2].- grid.x[1,1] ) #grid.y .- circshift(grid.y, (0, 1))
     dz = missing
 #    set_dx_ghost_cells!(dx, ghost_cells)
 #    set_dy_ghost_cells!(dy, ghost_cells)
@@ -55,7 +70,6 @@ function GridDerivatives(grid::StructuredGrid) #, ghost_cells::GhostCells; Kx=1,
 end
 
 GridDerivatives(x::AbstractGridData{B}, y::AbstractGridData{B}, z::AbstractGridData{B}) where {B<:Backend} = GridDerivatives(x,y,z,B())
-#GridDerivatives(x::GridData{B}, y::GridData{B}, z::GridData{B}) where {B<:Backend} = GridDerivatives(x,y,z,B())
 
 #
 # The solution would be for dx to be stored in the grid

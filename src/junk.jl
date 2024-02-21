@@ -36,12 +36,13 @@ struct MHDGrid{G,D,I,N,U} <: AbstractMHDGrid
     e::U #unitary vectors
 end
 MHDGrid(nx::Int64, ny::Int64; kw...) = MHDGrid((nx,ny); kw...)
+
 function MHDGrid(dims::NTuple{N,Int64}; kw...) where N
-    grid = StructuredGrid(dims; kw...) 
-    indexes = GridIndexes(dims; kw...)
+    grid      = StructuredGrid(dims; kw...) 
+    indexes   = GridIndexes(dims; kw...)
     grid_data = GridDerivatives(grid, indexes.ghost_cells)
-    n = NormalVectors(grid)
-    e = UnitaryVectors(grid)
+    n         = NormalVectors(grid)
+    e         = UnitaryVectors(grid)
     MHDGrid(grid, grid_data, indexes, n, e)
 end
 
