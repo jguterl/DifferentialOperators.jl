@@ -118,15 +118,15 @@ end
 # TODO: FH check that
 function set_dx_ghost_cells!(dx, ghost_cells::GhostCells) 
     ghost_cells.nx == 0 && return 
-    dx[1:1+ghost_cells.nx-1]  = dx[1+ghost_cells.nx] 
-    dx[end-ghost_cells.nx+1:end]  = dx[end-ghost_cells.nx]
+    dx[1:1+ghost_cells.nx-1,:]  = dx[1+ghost_cells.nx,:] 
+    dx[end-ghost_cells.nx+1:end,:]  = dx[end-ghost_cells.nx,:]
 end
 
 # TODO: FH check that
 function set_dy_ghost_cells!(dy, ghost_cells::GhostCells)
     ghost_cells.ny == 0 && return
-    dy[1:1+ghost_cells.ny-1] = dy[1+ghost_cells.ny]
-    dy[end-ghost_cells.ny+1:end] = dy[end-ghost_cells.ny]
+    dy[1:1+ghost_cells.ny-1] = dy[:,1+ghost_cells.ny]
+    dy[end-ghost_cells.ny+1:end] = dy[:,end-ghost_cells.ny]
 end
 
 
