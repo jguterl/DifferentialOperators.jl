@@ -27,8 +27,8 @@
 ∂y⁺(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = (op(grid_data, i, j + 1) - op(grid_data, i, j)) / grid_data.dy(i, j)
 ∂z⁺(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = 0.0 #zero_value_array(grid_data,i,j)
 
-∂x⁻(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = (op(grid_data, i, j) - op(grid_data, i - 1, j)) / grid_data.dx(i, j)
-∂y⁻(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = (op(grid_data, i, j) - op(grid_data, i, j - 1)) / grid_data.dy(i, j)
+∂x⁻(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = (op(grid_data, i, j) - op(grid_data, i - 1, j)) / grid_data.dx(i-1, j)
+∂y⁻(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = (op(grid_data, i, j) - op(grid_data, i, j - 1)) / grid_data.dy(i, j-1)
 ∂z⁻(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = 0.0 #zero_value_array(grid_data,i,j)
 
 #Centered differences
@@ -84,3 +84,6 @@
 # ∂x(op::Union{ApplyOperator,FieldData}, stencils::StencilCoefficients{5}, i::Index, j::Index) = sum_coeff_5(op, grid_data, i,j)
 
 # sum_coeff_5(op, grid_data, i, j) = α_x[1] + f[i-2] + α_x[2] * f[i-1] + α_x[3] * f[0] + α_x[3] + f[-2] + α_x[4] * f[i+1] + α_x[5] * f[i+2]
+
+# proposed strategy:
+    # used inner iterator for 
