@@ -17,13 +17,6 @@ ApplyOperatorScalar(d, v, o) = ApplyOperator(d, v, o, ScalarComponent())
 Adapt.@adapt_structure ApplyOperator
 export ApplyOperator
 
-
-#Product
-# struct ProductOperator     <: Operator end #not needed
-struct ScalarProductOperator <: Operator end #TODO:where does it belong -> center?
-struct ContractionOperator   <: Operator end #TODO:where does it belong -> center?
-struct CrossProductOperator  <: Operator end #TODO:where does it belong -> center?
-
 #Centered operators
 struct CurlOperator        <: Operator end
 struct GradientOperator    <: Operator end
@@ -60,23 +53,6 @@ GenericOperator(T) = GenericOperator{T}()
 (op::ApplyOperator{D,V,GenericOperator{O},ZComponent})(args...) where {O,D<:ScalarField,V<:VectorField}  = O(op.var.Z(args...), op.data.field(args...),)
 (op::ApplyOperator{D,V,GenericOperator{O},ScalarComponent})(args...) where {O,D<:Float64,V<:ScalarField} = O(op.var.field(args...), op.data)
 
-# # multiply
-# (op::ApplyOperator{D,V,ProductOperator,XComponent})(args...) where {D<:Float64,V} = op.var.x(args...) * op.data
-# (op::ApplyOperator{D,V,ProductOperator,YComponent})(args...) where {D<:Float64,V} = op.var.y(args...) * op.data
-# (op::ApplyOperator{D,V,ProductOperator,ZComponent})(args...) where {D<:Float64,V} = op.var.z(args...) * op.data
-
-# scalar product
-(op::ApplyOperator{D,V,ScalarProductOperator,ScalarComponent})(args...) where {D<:VectorField,V<:VectorField} = op.var.x(args...) * op.data.x(args...) + op.var.y(args...) * op.data.y(args...) + op.var.z(args...) * op.data.z(args...)
-
-#contraction product
-(op::ApplyOperator{D,V,ContractionOperator,XComponent})(args...) where {D<:VectorField,V<:TensorField} = op.var.xx(args...) * op.data.x(args...) + op.var.xy(args...) * op.data.y(args...) + op.var.xz(args...) * op.data.z(args...)
-(op::ApplyOperator{D,V,ContractionOperator,YComponent})(args...) where {D<:VectorField,V<:TensorField} = op.var.yx(args...) * op.data.x(args...) + op.var.yy(args...) * op.data.y(args...) + op.var.yz(args...) * op.data.z(args...)
-(op::ApplyOperator{D,V,ContractionOperator,ZComponent})(args...) where {D<:VectorField,V<:TensorField} = op.var.zx(args...) * op.data.x(args...) + op.var.zy(args...) * op.data.y(args...) + op.var.zz(args...) * op.data.z(args...)
-
-# crossproduct
-(op::ApplyOperator{D,V,CrossProductOperator,XComponent})(args...) where {D<:VectorField,V<:VectorField} = op.var.y(args...) * op.data.z(args...) - op.var.z(args...) * op.data.y(args...) 
-(op::ApplyOperator{D,V,CrossProductOperator,YComponent})(args...) where {D<:VectorField,V<:VectorField} = op.var.z(args...) * op.data.x(args...) - op.var.x(args...) * op.data.z(args...)
-(op::ApplyOperator{D,V,CrossProductOperator,ZComponent})(args...) where {D<:VectorField,V<:VectorField} = op.var.x(args...) * op.data.y(args...) - op.var.y(args...) * op.data.x(args...)
 
 #
 # Centered operators
@@ -132,123 +108,35 @@ GenericOperator(T) = GenericOperator{T}()
 # divergence --- vector into scalar
 (op::ApplyOperator{D,V,Divergence⁻Operator,ScalarComponent})(args...) where {D,V} = ∂x⁻(op.var.x, args...) + ∂y⁻(op.var.y, args...) + ∂z⁻(op.var.z, args...)
 
-
-
-
-
 abstract type AbstractOperator{D,V,O<:Operator} end 
 #Centered operators
 Curl{D,V}          = AbstractOperator{D,V,CurlOperator}
 Gradient{D,V}      = AbstractOperator{D,V,GradientOperator}
 ∇{D,V}             = AbstractOperator{D,V,GradientOperator}
 ∇(v::ScalarField)  = VectorField(nothing, v, GradientOperator())
+×(::Type{∇} , v::VectorField) = VectorField(nothing, v, CurlOperator()) #non-commutative operator
+⋅(::Type{∇}, var::VectorField) = ScalarField(nothing, var, DivergenceOperator())#non-commutative operator
+
 ∇²{D,V}            = AbstractOperator{D,V,LaplacianOperator}
 ∇²(v::ScalarField) = ScalarField(nothing, v, LaplacianOperator())
-
-
-#∇(v::TensorVectorField) = VectorField(nothing, v, GradientOperator())
-
-# ---- time operator-----
-#
-# This should not be here, and it's also likely not even needed
-#
-abstract type Apply∂ₜ{C} end 
-
-function Apply∂ₜ{C}(Δt::Float64, v :: Union{Field,ApplyOperator}, order) where {C}
-    order == 1 && return Apply∂ₜ1order{C}(Δt, v)
-    error("not implemented yet....")
-    order == 2 && return Apply∂ₜ2order{C}(Δt, v)
-end
-
-∂ₜ(v::T, Δt::Float64, order=1) where {T<:Union{Field,ApplyOperator}} = get_base_type(T)((Apply∂ₜ{fn}(Δt, v, order) for fn in fieldnames(T))...)
-
-struct Apply∂ₜ1order{C,F<:Vector,T<:Union{Field,ApplyOperator}} <: Apply∂ₜ{C}
-    Δt::F
-    var::T
-    var_old::T
-end
-
-Apply∂ₜ1order{C}(Δt::Float64, v::T) where {C,T} = Apply∂ₜ1order{C,Vector{Float64},T}([Δt], v,copy(v))
-
-struct Apply∂ₜ2order{C,F<:Vector,T<:Union{Field,ApplyOperator}} <: Apply∂ₜ{C}# let's not use mutable struct because of gpu
-    Δt::F 
-    var::T
-    var_old::T
-    var_old2::T
-end
-
-Apply∂ₜ2order{C}(Δt::Float64, v::T) where {C,T} = Apply∂ₜ2order{C,Vector{Float64},T}([Δt, Δt], v, copy(v), copy(v))
-
-set_dt!(∂ₜ::Apply∂ₜ1order, dt::Float64) = ∂ₜ.Δt[1] = dt
-
-(∂ₜ::Apply∂ₜ1order{:x,F,T})(args...) where {F,T}= (∂ₜ.var.x(args...) - ∂ₜ.var_old.x(args...)) / Δt[1]
-(∂ₜ::Apply∂ₜ1order{:y,F,T})(args...) where {F, T} = (∂ₜ.var.y(args...) - ∂ₜ.var_old.y(args...)) / Δt[1]
-(∂ₜ::Apply∂ₜ1order{:z,F,T})(args...) where {F, T} = (∂ₜ.var.z(args...) - ∂ₜ.var_old.z(args...)) / Δt[1]
-(∂ₜ::Apply∂ₜ1order{:field,F,T})(args...) where {F, T} = (∂ₜ.var.field(args...) - ∂ₜ.var_old.field(args...)) / Δt[1]
-
-(∂ₜ::Apply∂ₜ2order)(args...) = error() # TODO .... 
-
-# ---------------------------------------------- #
-#
-# What are these constructors(?) for????? I added the gradient ones, but they don't seem to 
-# do anything
-#
-#Gradient(v)       = Gradient(nothing, v) ???
-#Gradient(d,v)     = VectorField(d, v, GradientOperator()) ???
 
 #Forward staggered operators
 Curl⁺{D,V}         = AbstractOperator{D,V,Curl⁺Operator}
 Gradient⁺{D,V}     = AbstractOperator{D,V,Gradient⁺Operator}
 ∇⁺{D,V}            = AbstractOperator{D,V,Gradient⁺Operator}
 ∇⁺(v::ScalarField) = VectorField(nothing, v, Gradient⁺Operator())
+×(::Type{∇⁺}, vec::VectorField) = VectorField(nothing, vec, Curl⁺Operator()) #non-commutative operator
+⋅(::Type{∇⁺}, vec::VectorField) = ScalarField(nothing, vec, Divergence⁺Operator())#non-commutative operator
 
 #Backward staggered operators
-
+Curl⁻{D,V}         = AbstractOperator{D,V,Curl⁻Operator}
 Gradient⁻{D,V}     = AbstractOperator{D,V,Gradient⁻Operator}
 ∇⁻{D,V}            = AbstractOperator{D,V,Gradient⁻Operator}
-∇⁻(v::ScalarField) = VectorField(nothing, v, Gradient⁻Operator())
+∇⁻(scal::ScalarField) = VectorField(nothing, scal, Gradient⁻Operator())
+×(::Type{∇⁻}, vec::VectorField) = VectorField(nothing, vec, Curl⁻Operator())#non-commutative operator
+⋅(::Type{∇⁻}, vec::VectorField) = ScalarField(nothing, vec, Divergence⁻Operator())#non-commutative operator
 
-
-#
-# Product operations defining ∇⋅, ∇×, scalar product
-#
 #Product{D,V}  = AbstractOperator{D,V,ProductOperator}
-
-#TODO: Check dot and cross product. 
-#TODO: Verify commutativity! 
-
-×(::Type{∇}, v::VectorField) = VectorField(nothing, v, CurlOperator()) #non-commutative operator
-×(::Type{∇⁺}, v::VectorField) = VectorField(nothing, v, Curl⁺Operator()) #non-commutative operator
-×(::Type{∇⁻}, v::VectorField) = VectorField(nothing, v, Curl⁻Operator())#non-commutative operator
-×(a::T, b::U) where {T<:Float64,U<:Field} = get_base_type(U)(a, b, GenericOperator(*)) #commutative operator
-×(a::U, b::T) where {T<:Float64,U<:Field} = get_base_type(U)(b, a, GenericOperator(*)) #commutative operator
-
- # #non-commutative operator
-×(a::ScalarField, b::VectorField) = VectorField(a, b, ProductOperator()) #commutative operator
-×(b::VectorField, a::ScalarField) = VectorField(a, b, ProductOperator()) #commutative operator
-×(a::VectorField, b::VectorField) = VectorField(b, a, CrossProductOperator()) #non-commutative operator
-
-⋅(::Type{∇}, var::VectorField) = ScalarField(nothing, var, DivergenceOperator())#non-commutative operator
-⋅(::Type{∇⁺}, var::VectorField) = ScalarField(nothing, var, Divergence⁺Operator())#non-commutative operator
-⋅(::Type{∇⁻}, var::VectorField) = ScalarField(nothing, var, Divergence⁻Operator())#non-commutative operator
-
-#scalar product 
-⋅(a::VectorField, b::VectorField) = ScalarField(b, a, ScalarProductOperator()) #commutative operator
-⋅(a::TensorField, b::VectorField) = VectorField(b, a, ContractionOperator())  #non-commutative operator
-∻(a::TensorField, b::VectorField) = ScalarField(b, ⋅(a, b), ScalarProductOperator()) #non-commutative operator #notation: ∻ = `\kernelcontraction` 
-#TODO: FH check contraction
-
-# ∂t operator
-import Base: +, * ,/, -
-Base.:+(a::T, b::U) where {U<:Union{Field,Float64},T<:Field} = get_base_type(T)(b, a, GenericOperator(+))
-Base.:-(a::T, b::U) where {U<:Union{Field,Float64},T<:Field} = get_base_type(T)(b, a, GenericOperator(-))
-Base.:*(a::T, b::U) where {U<:Union{Field,Float64},T<:Field} = get_base_type(T)(b, a, GenericOperator(*))
-Base.:/(a::T, b::U) where {U<:Union{Field,Float64},T<:Field} = get_base_type(T)(b, a, GenericOperator(/))
-
-Base.:+(a::T, b::U) where {T<:Union{Float64},U<:Field} = get_base_type(U)(b, a, GenericOperator(+))
-Base.:-(a::T, b::U) where {T<:Union{Float64},U<:Field} = get_base_type(U)(b, a, GenericOperator(-))
-Base.:*(a::T, b::U) where {T<:Union{Float64},U<:Field} = get_base_type(U)(b, a, GenericOperator(*))
-Base.:/(a::T, b::U) where {T<:Union{Float64},U<:Field} = get_base_type(U)(b, a, GenericOperator(/))
 
 VectorField(d, v, o::Operator)  = VectorField(ApplyOperatorX(d, v, o), ApplyOperatorY(d, v, o), ApplyOperatorZ(d, v, o))
 ScalarField(d, v, o::Operator)  = ScalarField(ApplyOperatorScalar(d, v, o))
@@ -256,4 +144,4 @@ ScalarField(d, v, o::Operator)  = ScalarField(ApplyOperatorScalar(d, v, o))
 #
 # What is the wiggly product
 #
-export ∇, ∇², ∇⁺, ∇⁻, ×, ⋅, ∻, ∂ₜ
+export ∇, ∇², ∇⁺, ∇⁻, ×, ⋅

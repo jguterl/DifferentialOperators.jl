@@ -37,6 +37,7 @@ include("operators.jl")
 include("grid.jl")
 include("junk.jl")
 include("derivatives.jl")
+include("products.jl")
 
 #
 # This is likely wrong since vector to scalar and vice-verse aren't here anymore
