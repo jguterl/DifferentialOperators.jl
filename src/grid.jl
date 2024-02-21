@@ -125,8 +125,8 @@ end
 # TODO: FH check that
 function set_dy_ghost_cells!(dy, ghost_cells::GhostCells)
     ghost_cells.ny == 0 && return
-    dy[1:1+ghost_cells.ny-1] = dy[:,1+ghost_cells.ny]
-    dy[end-ghost_cells.ny+1:end] = dy[:,end-ghost_cells.ny]
+    dy[:,1:1+ghost_cells.ny-1] = dy[:,1+ghost_cells.ny]
+    dy[:,end-ghost_cells.ny+1:end] = dy[:,end-ghost_cells.ny]
 end
 
 
