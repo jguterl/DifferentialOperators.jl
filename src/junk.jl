@@ -1,7 +1,8 @@
+export MHDGrid
+
 const Grid1D{X}     = StructuredGrid{X,Missing,Missing}
 const Grid2D{X,Y}   = StructuredGrid{X,Y,Missing}
 const Grid3D{X,Y,Z} = StructuredGrid{X,Y,Z}
-
 
 #
 # Needs to be a different module / file entirely
@@ -22,20 +23,21 @@ function NormalVectors(grid::StructuredGrid)
 end
 
 UnitaryVectors(grid::StructuredGrid) = VectorField(VectorField(ones(grid), zeros(grid),zeros(grid)),VectorField(zeros(grid), ones(grid),zeros(grid)),VectorField(zeros(grid), zeros(grid),ones(grid)))
-export MHDGrid
-
 
 #
 # All this needs to be a different struct / file entirely
 #
 struct MHDGrid{G,D,I,N,U} <: AbstractMHDGrid
-    grid::G
-    grid_data::D
-    indexes::I
-    n::N #normal vector
-    e::U #unitary vectors
+    grid      :: G
+    grid_data :: D
+    indexes   :: I
+    n         :: N #normal vector
+    e         :: U #unitary vectors
 end
-MHDGrid(nx::Int64, ny::Int64; kw...) = MHDGrid((nx,ny); kw...)
+
+function MHDGrid(nx::Int64, ny::Int64; kw...)
+    return MHDGrid((nx,ny); kw...)
+end
 
 function MHDGrid(dims::NTuple{N,Int64}; kw...) where N
     grid      = StructuredGrid(dims; kw...) 
@@ -61,58 +63,25 @@ end
 #    dy[:,end-ghost_cells.ny+1:end] = dy[:,end-ghost_cells.ny]
 #end
 
-#
-# Needs to be another module / file entirely
-#
-struct IndexIterator{I}
-    start:: I
-    stop :: I
-end
+#export IndexIterator
 
-#
-# This is a very stupid name, almost identical to the other one
-# 
-struct IndexIterators{I,J,K}
-    i :: I
-    j :: J
-    k :: K
-end
+# -- junk ----
+# derivative operators
+# abstract type DerivativeOperator{K} end
+# struct dX{K} <: DerivativeOperator{K} end
+# struct dY{K} <: DerivativeOperator{K} end
+# struct dZ{K} <: DerivativeOperator{K} end
 
-#
-# Likely not needed or another module / file
-#
-struct GhostCells
-    nx::Int64
-    ny::Int64
-    nz::Int64
-end
+# struct ApplyDerivativeOperator{T<:DerivativeOperator,X,Y,Z}
+#     dx::X
+#     dy::Y
+#     dz::Z
+# end
 
-#
-# What is this for? Likely another module / file entirely
-#
-struct GridIndexes{I<:IndexIterators}
-    gc :: GhostCells
-    inner_iter::I
-    outer_iter::I
-end
-
-function GridIndexes(dims::NTuple{N,Int64}; nx_gc=1, ny_gc=1, nz_gc=1, kw...) where N
-    nx, ny, nz = get_dims(dims)
-    gc = GhostCells(nx_gc, ny_gc, nz_gc)
-    inner_iter = IndexIterators(IndexIterator(1,nx, nx_gc), IndexIterator(1,ny, ny_gc), IndexIterator(1,nz, nz_gc))
-    outer_iter = IndexIterators(IndexIterator(1,nx, 0), IndexIterator(1,ny, 0), IndexIterator(1,nz, 0))
-    GridIndexes(gc, inner_iter, outer_iter)
-end
-
-# mhd grid ----
-
-
-
-IndexIterator(r::UnitRange) = IndexIterator(r.start,r.stop)
-IndexIterator(n_start::Int64, n::Int64  , n_gc::Int64) = n_start+n_gc:n-n_gc
-IndexIterator(n_start::Int64, n::Missing, n_gc::Int64) = missing
-
-get_dims(dims::NTuple{1,Int64}) = dims[1], missing, missing
-get_dims(dims::NTuple{2,Int64}) = dims[1], dims[2], missing
-get_dims(dims::NTuple{3,Int64}) = dims[1], dims[2], dims[3]
-export IndexIterator
+# ApplyDerivativeOperator{T}(x::X, y::Y, z::Z) where {T,X,Y,Z} = ApplyDerivativeOperator{T,X,Y,Z}(x, y, z)
+# function ApplyDerivativeOperator{T}(grid::Grid) where {T<:DerivativeOperator}
+#     dx = grid.x .- circshift(grid.x, (1, 0))
+#     dy = grid.y .- circshift(grid.y, (0, 1))
+#     dz = missing
+#     ApplyDerivativeOperator{T}(GridData(dx), GridData(dy), GridData(dz))
+# end

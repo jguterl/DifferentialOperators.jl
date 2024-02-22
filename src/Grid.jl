@@ -1,13 +1,4 @@
-# a generic uniform grid generator just for testing ... 
 
-#
-# This entire class is just 200 lines of gibberish to provide dx and dy which are constants!
-# Down to 100
-#
-
-#
-# Should change the name of the object, since it collides with Base!!
-#
 #Base.@kwdef
 Base.@kwdef struct StructuredGrid{X,Y,Z} <: AbstractGrid
     x::X = missing
@@ -81,24 +72,3 @@ get_dy(grid_data::GridDerivatives) = CUDA.@allowscalar grid_data.dy.data[3, 3] #
 Adapt.@adapt_structure GridDerivatives
 
 export get_dx, get_dy
-
-# -- junk ----
-# derivative operators
-# abstract type DerivativeOperator{K} end
-# struct dX{K} <: DerivativeOperator{K} end
-# struct dY{K} <: DerivativeOperator{K} end
-# struct dZ{K} <: DerivativeOperator{K} end
-
-# struct ApplyDerivativeOperator{T<:DerivativeOperator,X,Y,Z}
-#     dx::X
-#     dy::Y
-#     dz::Z
-# end
-
-# ApplyDerivativeOperator{T}(x::X, y::Y, z::Z) where {T,X,Y,Z} = ApplyDerivativeOperator{T,X,Y,Z}(x, y, z)
-# function ApplyDerivativeOperator{T}(grid::Grid) where {T<:DerivativeOperator}
-#     dx = grid.x .- circshift(grid.x, (1, 0))
-#     dy = grid.y .- circshift(grid.y, (0, 1))
-#     dz = missing
-#     ApplyDerivativeOperator{T}(GridData(dx), GridData(dy), GridData(dz))
-# end
