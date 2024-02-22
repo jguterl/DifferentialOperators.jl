@@ -7,7 +7,7 @@ export Field, VectorField, ScalarField, TensorField
 
 export compute!, compute_turbo!, compute_threads!
 
-export StructuredGrid, GridDerivatives, GridData
+export LogicalCoords, GridDerivatives, GridData
 
 export MHDGrid
 
@@ -43,8 +43,8 @@ get_base_type(T) = get_base_type(typeof(T))
 get_base_type(T::DataType) = T.name.wrapper
 
 include("Indices.jl")
-include("Fields.jl")
-include("Operators.jl")
+include("Fields/Fields.jl")
+include("Operators/Operators.jl")
 include("Grid.jl")
 include("junk.jl")
 

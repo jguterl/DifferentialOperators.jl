@@ -1,15 +1,15 @@
 
-#Base.@kwdef
-Base.@kwdef struct StructuredGrid{X,Y,Z} <: AbstractGrid
+
+Base.@kwdef struct LogicalCoords{X,Y,Z} <: AbstractGrid
     x::X = missing
     y::Y = missing
     z::Z = missing
 end
 
-Base.ones(grid::StructuredGrid)                    = ones(grid,current_backend.value)
-Base.ones(grid::StructuredGrid, backend::Backend)  = backend(ones(size(grid.x)...))
-Base.zeros(grid::StructuredGrid)                   = zeros(grid, current_backend.value)
-Base.zeros(grid::StructuredGrid, backend::Backend) = backend(zeros(size(grid.x)...))
+Base.ones(coords::LogicalCoords)                    = ones(coords,current_backend.value)
+Base.ones(coords::LogicalCoords, backend::Backend)  = backend(ones(size(coords.x)...))
+Base.zeros(coords::LogicalCoords)                   = zeros(coords, current_backend.value)
+Base.zeros(coords::LogicalCoords, backend::Backend) = backend(zeros(size(coords.x)...))
 
 
 function _get_grid_points(i::Int64, dims, ng, d0, L)
@@ -27,15 +27,15 @@ end
 #
 # The backend should default to CPU if nothing is set
 #
-function StructuredGrid(dims::NTuple{N,Int64}; L=[1.0, 1.0, 1.0], ng=[0, 0, 0], d0=[0.0, 0.0, 0.0], backend::Backend=current_backend.value) where {N}
-    return StructuredGrid(; (fn => get_grid_points(backend, i, dims, ng, d0, L) for ((i, d), fn) in zip(enumerate(dims), fieldnames(StructuredGrid)))...)
+function LogicalCoords(dims::NTuple{N,Int64}; L=[1.0, 1.0, 1.0], ng=[0, 0, 0], d0=[0.0, 0.0, 0.0], backend::Backend=current_backend.value) where {N}
+    return LogicalCoords(; (fn => get_grid_points(backend, i, dims, ng, d0, L) for ((i, d), fn) in zip(enumerate(dims), fieldnames(LogicalCoords)))...)
 end
     
-function StructuredGrid(nx::Int64, ny::Int64; kw...)
-    return StructuredGrid((nx,ny); kw...)
+function LogicalCoords(nx::Int64, ny::Int64; kw...)
+    return LogicalCoords((nx,ny); kw...)
 end
 
-Base.size(grid::StructuredGrid) = size(grid.x)
+Base.size(coords::LogicalCoords) = size(coords.x)
 
 #
 # Schedule this entire class for deletion whenever possible
@@ -50,10 +50,10 @@ end
 #
 # Get rid of this entire class, for now hack to get the correct spacings -- uniform everywhere
 #
-#function GridDerivatives(grid::Grid, ghost_cells::GhostCells; Kx=1, Ky=1, Kz=1)
-function GridDerivatives(grid::StructuredGrid) #, ghost_cells::GhostCells; Kx=1, Ky=1, Kz=1)
-    dx = 0*grid.x .+ ( grid.x[2,1] - grid.x[1,1] ) #grid.x .- circshift(grid.x, (1, 0))
-    dy = 0*grid.y .+ ( grid.y[1,2].- grid.x[1,1] ) #grid.y .- circshift(grid.y, (0, 1))
+#function GridDerivatives(coords::Grid, ghost_cells::GhostCells; Kx=1, Ky=1, Kz=1)
+function GridDerivatives(coords::LogicalCoords) #, ghost_cells::GhostCells; Kx=1, Ky=1, Kz=1)
+    dx = 0*coords.x .+ ( coords.x[2,1] - coords.x[1,1] ) #coords.x .- circshift(coords.x, (1, 0))
+    dy = 0*coords.y .+ ( coords.y[1,2].- coords.x[1,1] ) #coords.y .- circshift(coords.y, (0, 1))
     dz = missing
 #    set_dx_ghost_cells!(dx, ghost_cells)
 #    set_dy_ghost_cells!(dy, ghost_cells)
