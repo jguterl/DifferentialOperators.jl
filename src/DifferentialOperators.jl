@@ -34,10 +34,8 @@ get_base_type(T::DataType) = T.name.wrapper
 
 include("Fields.jl")
 include("Operators.jl")
-include("grid.jl")
+include("Grid.jl")
 include("junk.jl")
-#include("FiniteDifferences.jl")
-#include("Products.jl")
 
 #
 # Be careful with the INBOUNDS that remove check of out of bound indexes
