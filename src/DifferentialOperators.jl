@@ -66,16 +66,16 @@ include("Operators/Operators.jl")
 # Pointwise evaluation of the operator for vectors and scalars
 #
 
-function compute_point!(op::ScalarField, grid_data::AbstractGridDerivatives, v::ScalarField, i::Index, j::Index)
+function compute_point!(s_out::ScalarField, op_in::ScalarField, grid_data::AbstractGridDerivatives, i::Index, j::Index)
     #@inbounds v.field[i, j] = op.field(grid_data, i, j)
-    v.field[i, j] = op.field(grid_data, i, j)
+    s_out.field[i, j] = op_in.field(grid_data, i, j)
     nothing
 end
 
-function compute_point!(op::VectorField, grid_data::AbstractGridDerivatives, v::VectorField, i::Index, j::Index)
-        v.x[i, j] = op.x(grid_data, i, j)
-        v.y[i, j] = op.y(grid_data, i, j)
-        v.z[i, j] = op.z(grid_data, i, j)
+function compute_point!(v_out::VectorField, op_in::VectorField, grid_data::AbstractGridDerivatives, i::Index, j::Index)
+        v_out.x[i, j] = op_in.x(grid_data, i, j)
+        v_out.y[i, j] = op_in.y(grid_data, i, j)
+        v_out.z[i, j] = op_in.z(grid_data, i, j)
     nothing
 end
 
@@ -86,26 +86,26 @@ end
 
 import CUDA: i32
 
-function compute!(op::Union{TensorField,ScalarField,VectorField}, grid_data::AbstractGridDerivatives{B}, v, i_::IndexIterator, j_::IndexIterator) where {B<:CUDABackend}
+function compute!(v, op::Union{TensorField,ScalarField,VectorField}, grid_data::AbstractGridDerivatives{B}, i_::IndexIterator, j_::IndexIterator) where {B<:CUDABackend}
     i = (blockIdx().x-1i32) * blockDim().x + threadIdx().x
     j = (blockIdx().y-1i32) * blockDim().y + threadIdx().y
     (i < i_.start || i> i_.stop || j < j_.start || j> j_.stop) && return
-    compute_point!(op, grid_data, v, i, j)
+    compute_point!(v, op, grid_data, i, j)
     nothing
 end
 
 #
 # CPU backend computation
 #
-function compute!(op, grid_data::AbstractGridDerivatives{B}, v, i_::IndexIterator, j_::IndexIterator) where {B<:CPUBackend}
-    compute!(op, grid_data, v, i_.start:i_.stop, j_.start:j_.stop)
+function compute!(v, op, grid_data::AbstractGridDerivatives{B}, i_::IndexIterator, j_::IndexIterator) where {B<:CPUBackend}
+    compute!(v, op, grid_data, i_.start:i_.stop, j_.start:j_.stop)
     return nothing
 end
 
-function compute!(op::Union{TensorField,ScalarField,VectorField}, grid_data::AbstractGridDerivatives{B}, v, i_::UnitRange, j_::UnitRange) where {B<:CPUBackend}
+function compute!(v, op::Union{TensorField,ScalarField,VectorField}, grid_data::AbstractGridDerivatives{B}, i_::UnitRange, j_::UnitRange) where {B<:CPUBackend}
     for j in j_
         for i in i_
-            compute_point!(op, grid_data, v, i, j)
+            compute_point!(v, op, grid_data, i, j)
         end
     end
     nothing
@@ -114,15 +114,15 @@ end
 #
 # Threaded computation -- eventually should be a backend
 #
-function compute_threads!(op, grid_data::AbstractGridDerivatives{B}, v, i_::IndexIterator, j_::IndexIterator) where {B<:CPUBackend}
-    compute_threads!(op, grid_data, v, i_.start:i_.stop, j_.start:j_.stop)
+function compute_threads!(v, op, grid_data::AbstractGridDerivatives{B}, i_::IndexIterator, j_::IndexIterator) where {B<:CPUBackend}
+    compute_threads!(v, op, grid_data, i_.start:i_.stop, j_.start:j_.stop)
     return nothing
 end
 
-function compute_threads!(op::Union{TensorField,ScalarField,VectorField}, grid_data::AbstractGridDerivatives{B}, v::VectorField, i_::UnitRange, j_::UnitRange) where {B<:CPUBackend}
+function compute_threads!(v::VectorField, op::Union{TensorField,ScalarField,VectorField}, grid_data::AbstractGridDerivatives{B}, i_::UnitRange, j_::UnitRange) where {B<:CPUBackend}
     Threads.@threads for j in j_
         for i in i_
-            compute_point!(op, grid_data, v, i, j)
+            compute_point!(v, op, grid_data, i, j)
         end
     end
     return nothing

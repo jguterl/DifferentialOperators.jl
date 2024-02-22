@@ -110,7 +110,7 @@ for n = 1:nreps
     #Numerical solution
     f1_expr = ∇(ψ)
     v_num = VectorField(local_coords)
-    compute!(f1_expr, grid_data, v_num, intx, inty)
+    compute!(v_num, f1_expr, grid_data, intx, inty)
 
     #Analytical solution
     @. v_ana.x.data = fx(local_coords.x, local_coords.y)
@@ -125,7 +125,7 @@ for n = 1:nreps
     #
     #Numerical solution
     f2_expr = ∇²(ψ)
-    compute!(f2_expr, grid_data, s_num, intx, inty)
+    compute!(s_num, f2_expr, grid_data, intx, inty)
 
     #Analytical solution
     s_ana = ScalarField(local_coords)
@@ -140,7 +140,7 @@ for n = 1:nreps
     #Numerical solution
     f3_expr = ∇ × ∇(ψ)
     v_num = VectorField(local_coords)
-    compute!(f3_expr, grid_data, v_num, intx, inty)
+    compute!(v_num, f3_expr, grid_data, intx, inty)
 
     #Analytical solution
     v_ana = VectorField(local_coords) #All zeros
@@ -153,7 +153,7 @@ for n = 1:nreps
     #    
     f4_expr = ∇ × V
     v_num = VectorField(local_coords)
-    compute!(f4_expr, grid_data, v_num, intx, inty)
+    compute!(v_num, f4_expr, grid_data, intx, inty)
 
     #Analytical solution
     v_ana = VectorField(local_coords)
@@ -168,7 +168,7 @@ for n = 1:nreps
     #
     f5_expr = ∇ ⋅ (f4_expr)
     s_num = ScalarField(local_coords)
-    compute!(f5_expr, grid_data, s_num, intx, inty)
+    compute!(s_num, f5_expr, grid_data, intx, inty)
 
     #Analytical solution
     s_ana = ScalarField(local_coords) # All zero from div(curl)
@@ -183,7 +183,7 @@ for n = 1:nreps
     #
     f6_expr = ∇⁺ × V
     v_num = VectorField(local_coords)
-    compute!(f6_expr, grid_data, v_num, intx, inty)
+    compute!(v_num, f6_expr, grid_data, intx, inty)
 
     #Analytical solution
     v_ana = VectorField(local_coords)
@@ -195,7 +195,7 @@ for n = 1:nreps
     # Divergence of the curl
     f7_expr = ∇⁺ ⋅ (f6_expr)
     s_num = ScalarField(local_coords)
-    compute!(f7_expr, grid_data, s_num, intx, inty)
+    compute!(s_num, f7_expr, grid_data, intx, inty)
 
     #Analytical solution
     s_ana = ScalarField(local_coords) # All zero
@@ -204,7 +204,7 @@ for n = 1:nreps
     #Curl of the curl (vector Laplacian)
     f8_expr = ∇⁻ × (∇⁺ × (V))
     v_num = VectorField(local_coords)
-    compute!(f8_expr, grid_data, v_num, intx, inty)
+    compute!(v_num, f8_expr, grid_data, intx, inty)
 
     #Analytical solution
     v_ana = VectorField(local_coords)

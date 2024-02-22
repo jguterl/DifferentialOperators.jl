@@ -6,8 +6,8 @@ set_backend!(:cpu)
 # Grid sizes
 nx, ny = 100, 100
 ig = 2
-test!(f, result) = compute!(f, grid_data, result, 1+ig:nx-ig, 1+ig:ny-ig)
-test_threads!(f, result) = compute_threads!(f, grid_data, result, 1+ig:nx-ig, 1+ig:ny-ig)
+test!(f, result) = compute!(result, f, grid_data, 1+ig:nx-ig, 1+ig:ny-ig)
+test_threads!(f, result) = compute_threads!(result, f, grid_data, 1+ig:nx-ig, 1+ig:ny-ig)
 
 # First we create a grid 
 #grid_mhd = MHDGrid(nx, ny; L=[2π, 4π])

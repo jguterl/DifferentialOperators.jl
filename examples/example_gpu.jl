@@ -4,14 +4,14 @@ using BenchmarkTools
 
 # A wrapper for testing (f is the operator we are interested in)
 ig = 2
-test!(f, result) = CUDA.@sync @cuda compute!(f, grid_data, result, IndexIterator(grid_mhd.indexes.inner_iter.i), IndexIterator(grid_mhd.indexes.inner_iter.j))
+test!(f, result) = CUDA.@sync @cuda compute!(result, f, grid_data, IndexIterator(grid_mhd.indexes.inner_iter.i), IndexIterator(grid_mhd.indexes.inner_iter.j))
 
 set_backend!(:cuda)
 # Grid sizes
 nx, ny = 100, 100
 
 # First we create a grid 
-grid_mhd = MHDGrid(nx, ny; L=[2π, 4π])
+grid_mhd = StructuredGrid(nx, ny; L=[2π, 4π])
 grid = grid_mhd.grid
 # We also define the data needed to calculated the derivatives (we can define order of accuracy here)
 grid_data = GridDerivatives(grid);
