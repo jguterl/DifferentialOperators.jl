@@ -32,15 +32,13 @@ get_base_type(T) = get_base_type(typeof(T))
 get_base_type(T::DataType) = T.name.wrapper
 
 
-include("fields.jl")
-include("operators.jl")
+include("Fields.jl")
+include("Operators.jl")
 include("grid.jl")
 include("junk.jl")
-include("derivatives.jl")
-include("products.jl")
+#include("FiniteDifferences.jl")
+#include("Products.jl")
 
-#
-# This is likely wrong since vector to scalar and vice-verse aren't here anymore
 #
 # Be careful with the INBOUNDS that remove check of out of bound indexes
 function compute!(op::ScalarField, grid_data::AbstractGridDerivatives, v::ScalarField, i::Int64, j::Int64)
@@ -72,6 +70,7 @@ end
 #     #compute!(op, grid_data, v, i, j)
 #     nothing
 # end
+
 compute!(op, grid_data::AbstractGridDerivatives{B}, v, i_::IndexIterator, j_::IndexIterator) where {B<:CPUBackend} = compute!(op, grid_data, v, i_.start:i_.stop, j_.start:j_.stop)
 function compute!(op::Union{TensorField,ScalarField,VectorField}, grid_data::AbstractGridDerivatives{B}, v, i_::UnitRange, j_::UnitRange) where {B<:CPUBackend}
     for j in j_

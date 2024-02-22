@@ -44,4 +44,4 @@ Base.:-(a::T, b::U) where {T<:Union{Float64},U<:Field} = get_base_type(U)(b, a, 
 Base.:*(a::T, b::U) where {T<:Union{Float64},U<:Field} = get_base_type(U)(b, a, GenericOperator(*))
 Base.:/(a::T, b::U) where {T<:Union{Float64},U<:Field} = get_base_type(U)(b, a, GenericOperator(/))
 
-export ×, ⋅, ∻
+#export ×, ⋅, ∻

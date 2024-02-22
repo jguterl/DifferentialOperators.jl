@@ -17,9 +17,13 @@ ApplyOperatorScalar(d, v, o) = ApplyOperator(d, v, o, ScalarComponent())
 Adapt.@adapt_structure ApplyOperator
 export ApplyOperator
 
+abstract type AbstractOperator{D,V,O<:Operator} end
+
+include("FiniteDifferences.jl")
 include("CenteredGradients.jl")
 include("ForwardStaggeredGradients.jl")
 include("BackwardStaggeredGradients.jl")
+include("Products.jl")
 
 struct GenericOperator{T}  <: Operator end
 GenericOperator(T) = GenericOperator{T}()
@@ -41,7 +45,7 @@ GenericOperator(T) = GenericOperator{T}()
 (op::ApplyOperator{D,V,GenericOperator{O},ZComponent})(args...) where {O,D<:ScalarField,V<:VectorField}  = O(op.var.Z(args...), op.data.field(args...),)
 (op::ApplyOperator{D,V,GenericOperator{O},ScalarComponent})(args...) where {O,D<:Float64,V<:ScalarField} = O(op.var.field(args...), op.data)
 
-abstract type AbstractOperator{D,V,O<:Operator} end
+
 
 VectorField(d, v, o::Operator)  = VectorField(ApplyOperatorX(d, v, o), ApplyOperatorY(d, v, o), ApplyOperatorZ(d, v, o))
 ScalarField(d, v, o::Operator)  = ScalarField(ApplyOperatorScalar(d, v, o))

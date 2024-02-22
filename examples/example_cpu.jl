@@ -29,44 +29,45 @@ kz = 3;
 
 
 # Contraction product
-M = TensorField(1, 1)
-v = VectorField(1, 1)
-v.x .= 1
-v.y .= 2
-v.z .= 3
-M.xx .= 1
-M.xy .= 2
-M.xz .= 3
-M.yx .= 1*2
-M.yy .= 2*2
-M.yz .= 3*2
-M.zx .= 1*3
-M.zy .= 2*3
-M.zz .= 3*3
+#M = TensorField(1, 1)
+#v = VectorField(1, 1)
+#v.x .= 1
+#v.y .= 2
+#v.z .= 3
+#M.xx .= 1
+#M.xy .= 2
+#M.xz .= 3
+#M.yx .= 1*2
+#M.yy .= 2*2
+#M.yz .= 3*2
+#M.zx .= 1*3
+#M.zy .= 2*3
+#M.zz .= 3*3
 
-res1 = VectorField(1, 1)
-f! = M ⋅ v
-compute!(f!, grid_data, res1, 1:1, 1:1)
+#res1 = VectorField(1, 1)
+#f! = M ⋅ v
+#compute!(f!, grid_data, res1, 1:1, 1:1)
 
 # contraction :
-M = TensorField(1, 1)
-v = VectorField(1, 1)
-v.x .= 1
-v.y .= 2
-v.z .= 3
-M.xx .= 1
-M.xy .= 2
-M.xz .= 3
-M.yx .= 1 * 2
-M.yy .= 2 * 2
-M.yz .= 3 * 2
-M.zx .= 1 * 3
-M.zy .= 2 * 3
-M.zz .= 3 * 3
+#M = TensorField(1, 1)
+#v = VectorField(1, 1)
+#v.x .= 1
+#v.y .= 2
+#v.z .= 3
+#M.xx .= 1
+#M.xy .= 2
+#M.xz .= 3
+#M.yx .= 1 * 2
+#M.yy .= 2 * 2
+#M.yz .= 3 * 2
+#M.zx .= 1 * 3
+#M.zy .= 2 * 3
+#M.zz .= 3 * 3
 
-res1 = ScalarField(1, 1)
-f! = M ∻ v
-compute!(f!, grid_data, res1, 1:1, 1:1)
+#res1 = ScalarField(1, 1)
+#f! = M ∻ v
+#compute!(f!, grid_data, res1, 1:1, 1:1)
+
 #
 # ∇ψ in collocated grid
 #
