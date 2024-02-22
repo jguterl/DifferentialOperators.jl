@@ -1,6 +1,6 @@
 module DifferentialOperators
 
-include("backend.jl")
+include("Backends/backend.jl")
 export set_backend! #, check_backend!
 
 export Field, VectorField, ScalarField, TensorField
@@ -42,11 +42,11 @@ struct ScalarComponent <: AbstractComponent end
 get_base_type(T) = get_base_type(typeof(T))
 get_base_type(T::DataType) = T.name.wrapper
 
-include("Indices.jl")
+include("Grid/Indices.jl")
 include("Fields/Fields.jl")
 include("Operators/Operators.jl")
-include("Grid.jl")
-include("junk.jl")
+include("Grid/Grid.jl")
+include("Grid/junk.jl")
 
 #
 # Pointwise evaluation of the operator for vectors and scalars
