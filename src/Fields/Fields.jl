@@ -1,4 +1,4 @@
-include("GridData.jl")
+#include("GridData.jl")
 include("FieldData.jl")
 include("VectorField.jl")
 include("ScalarField.jl")

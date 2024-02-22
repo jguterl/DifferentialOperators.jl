@@ -9,14 +9,18 @@ export compute!, compute_turbo!, compute_threads!
 
 export LogicalCoords, GridDerivatives, GridData
 
-export MHDGrid
+export StructuredGrid
 
 #export AbstractGrid
-#export AbstractMHDGrid
+#export AbstractStructuredGrid
+
+#
+# These likely need to be sent to their respective files
+#
 
 # data structures related to grid
 abstract type AbstractGrid end 
-abstract type AbstractMHDGrid end
+abstract type AbstractStructuredGrid end
 abstract type AbstractGridDerivatives{B<:Backend} end 
 
 # data structures for dispatches purposes 
@@ -42,11 +46,21 @@ struct ScalarComponent <: AbstractComponent end
 get_base_type(T) = get_base_type(typeof(T))
 get_base_type(T::DataType) = T.name.wrapper
 
-include("Grid/Indices.jl")
-include("Fields/Fields.jl")
-include("Operators/Operators.jl")
+#
+# Structures and functionality for indices and grids
+#
 include("Grid/Grid.jl")
-include("Grid/junk.jl")
+
+#
+# Structures for scalar, vector, tensor fields
+#
+include("Fields/Fields.jl")
+
+#
+# Vector calculus, cross and dot product, finite differences
+#
+include("Operators/Operators.jl")
+
 
 #
 # Pointwise evaluation of the operator for vectors and scalars
