@@ -1,22 +1,22 @@
 #Centered first derivative
-∂x(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = 0.5 * (op(grid_data, i + 1, j) - op(grid_data, i - 1, j)) / grid_data.dx(i, j)
-∂y(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = 0.5 * (op(grid_data, i, j + 1) - op(grid_data, i, j - 1)) / grid_data.dy(i, j)
-∂z(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = 0.0 
+∂x(op::Union{ApplyOperator,FieldData}, grid_data::AbstractCoordSpacings, i::Index, j::Index) = 0.5 * (op(grid_data, i + 1, j) - op(grid_data, i - 1, j)) / grid_data.dx(i, j)
+∂y(op::Union{ApplyOperator,FieldData}, grid_data::AbstractCoordSpacings, i::Index, j::Index) = 0.5 * (op(grid_data, i, j + 1) - op(grid_data, i, j - 1)) / grid_data.dy(i, j)
+∂z(op::Union{ApplyOperator,FieldData}, grid_data::AbstractCoordSpacings, i::Index, j::Index) = 0.0 
 
 #Centered second derivative
-∂x²(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = (op(grid_data, i + 1, j) - 2 * op(grid_data, i, j) + op(grid_data, i - 1, j)) / grid_data.dx(i, j)^2
-∂y²(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = (op(grid_data, i, j + 1) - 2 * op(grid_data, i, j) + op(grid_data, i, j - 1)) / grid_data.dy(i, j)^2
-∂z²(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = 0.0
+∂x²(op::Union{ApplyOperator,FieldData}, grid_data::AbstractCoordSpacings, i::Index, j::Index) = (op(grid_data, i + 1, j) - 2 * op(grid_data, i, j) + op(grid_data, i - 1, j)) / grid_data.dx(i, j)^2
+∂y²(op::Union{ApplyOperator,FieldData}, grid_data::AbstractCoordSpacings, i::Index, j::Index) = (op(grid_data, i, j + 1) - 2 * op(grid_data, i, j) + op(grid_data, i, j - 1)) / grid_data.dy(i, j)^2
+∂z²(op::Union{ApplyOperator,FieldData}, grid_data::AbstractCoordSpacings, i::Index, j::Index) = 0.0
 
 #Forward staggered first derivative
-∂x⁺(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = (op(grid_data, i + 1, j) - op(grid_data, i, j)) / grid_data.dx(i, j)
-∂y⁺(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = (op(grid_data, i, j + 1) - op(grid_data, i, j)) / grid_data.dy(i, j)
-∂z⁺(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = 0.0 
+∂x⁺(op::Union{ApplyOperator,FieldData}, grid_data::AbstractCoordSpacings, i::Index, j::Index) = (op(grid_data, i + 1, j) - op(grid_data, i, j)) / grid_data.dx(i, j)
+∂y⁺(op::Union{ApplyOperator,FieldData}, grid_data::AbstractCoordSpacings, i::Index, j::Index) = (op(grid_data, i, j + 1) - op(grid_data, i, j)) / grid_data.dy(i, j)
+∂z⁺(op::Union{ApplyOperator,FieldData}, grid_data::AbstractCoordSpacings, i::Index, j::Index) = 0.0 
 
 #Backward staggered first derivative
-∂x⁻(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = (op(grid_data, i, j) - op(grid_data, i - 1, j)) / grid_data.dx(i, j)
-∂y⁻(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = (op(grid_data, i, j) - op(grid_data, i, j - 1)) / grid_data.dy(i, j)
-∂z⁻(op::Union{ApplyOperator,FieldData}, grid_data::AbstractGridDerivatives, i::Index, j::Index) = 0.0 
+∂x⁻(op::Union{ApplyOperator,FieldData}, grid_data::AbstractCoordSpacings, i::Index, j::Index) = (op(grid_data, i, j) - op(grid_data, i - 1, j)) / grid_data.dx(i, j)
+∂y⁻(op::Union{ApplyOperator,FieldData}, grid_data::AbstractCoordSpacings, i::Index, j::Index) = (op(grid_data, i, j) - op(grid_data, i, j - 1)) / grid_data.dy(i, j)
+∂z⁻(op::Union{ApplyOperator,FieldData}, grid_data::AbstractCoordSpacings, i::Index, j::Index) = 0.0 
 
 
 # struct StencilCoefficients{V,W,Z, dX,dY,dZ} <: AbstractStencilCoefficients{dX,dY,dZ}

@@ -61,6 +61,7 @@ for n = 1:nreps
     nx = nx0 * 2^(n - 1) # Number of interior points
     ny = ny0 * 2^(n - 1) # Number of interior points
 
+    npts = [nx, ny]
     intx = 1+ng:nx+ng
     inty = 1+ng:ny+ng
 
@@ -68,24 +69,24 @@ for n = 1:nreps
     inty2 = 1+ng2:ny+ng2
 
     # First we create a grid that start at x=0 on the first interior point
-    local_coords = LogicalCoords(nx, ny; L=[Lx, Ly], d0=[0.0, 0.0], ng=[1, 1])
+    local_coords = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.0, 0.0], ng=[1, 1])
 
     # We also define the data needed to calculated the derivatives (we can define order of accuracy here)
-    grid_data = GridDerivatives(local_coords)
+    grid_data = CoordSpacings(local_coords)
 
     dx = grid_data.dx.data[2, 2]
     dy = grid_data.dy.data[2, 2]
 
     # Staggered grids asuming half a grid point displacement
     # This is the standard finite volume grid for fluxes through faces
-    gridvˣ = LogicalCoords(nx, ny; L=[Lx, Ly], d0=[0.5 * dx, 0], ng=[1, 1])
-    gridvʸ = LogicalCoords(nx, ny; L=[Lx, Lx], d0=[0.0, 0.5 * dy], ng=[1, 1])
-    gridvᶻ = LogicalCoords(nx, ny; L=[Lx, Ly], d0=[0.0, 0.0], ng=[1, 1]) #Placehold for z grid
+    gridvˣ = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.5 * dx, 0], ng=[1, 1])
+    gridvʸ = LogicalCoords( npts ; L=[Lx, Lx], d0=[0.0, 0.5 * dy], ng=[1, 1])
+    gridvᶻ = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.0, 0.0], ng=[1, 1]) #Placehold for z grid
 
     # This is the adjoint grid produced using curl(v) 
-    coordsbˣ = LogicalCoords(nx, ny; L=[Lx, Ly], d0=[0.0, 0.5 * dy], ng=[1, 1]) # 0.5*dz
-    coordsbʸ = LogicalCoords(nx, ny; L=[Lx, Ly], d0=[0.5 * dx, 0.0], ng=[1, 1]) # 0.5*dz
-    coordsbᶻ = LogicalCoords(nx, ny; L=[Lx, Ly], d0=[0.5 * dx, 0.5 * dy], ng=[1, 1]) #Placehold for z grid
+    coordsbˣ = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.0, 0.5 * dy], ng=[1, 1]) # 0.5*dz
+    coordsbʸ = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.5 * dx, 0.0], ng=[1, 1]) # 0.5*dz
+    coordsbᶻ = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.5 * dx, 0.5 * dy], ng=[1, 1]) #Placehold for z grid
 
     ψ = ScalarField(local_coords)
     @. ψ.field.data = cos(kx * local_coords.x) * cos(ky * local_coords.y)

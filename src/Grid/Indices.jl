@@ -47,8 +47,8 @@ end
 function GridIndexes(dims::NTuple{N,Int64}; nx_gc=1, ny_gc=1, nz_gc=1, kw...) where N
     nx, ny, nz = get_dims(dims)
     gc = GhostCells(nx_gc, ny_gc, nz_gc)
-    inner_iter = IndexIterators(IndexIterator(1,nx, nx_gc), IndexIterator(1,ny, ny_gc), IndexIterator(1,nz, nz_gc))
-    outer_iter = IndexIterators(IndexIterator(1,nx, 0), IndexIterator(1,ny, 0), IndexIterator(1,nz, 0))
+    inner_iter = IndexIterators(IndexIterator(1, nx, nx_gc), IndexIterator(1, ny, ny_gc), IndexIterator(1, nz, nz_gc))
+    outer_iter = IndexIterators(IndexIterator(1, nx, 0), IndexIterator(1, ny, 0), IndexIterator(1,nz, 0))
     GridIndexes(gc, inner_iter, outer_iter)
 end
 

@@ -9,7 +9,7 @@ end
 FieldData(data) = FieldData(current_backend(data), current_backend.value)
 Adapt.@adapt_structure FieldData
 # accesssor
-(d::FieldData{T,B})(grid_data::AbstractGridDerivatives, i::Index, j::Index) where {T,B} = d.data[i, j]
+(d::FieldData{T,B})(grid_data::AbstractCoordSpacings, i::Index, j::Index) where {T,B} = d.data[i, j]
 (d::FieldData{T,B})(i::Index, j::Index) where {T,B} = d.data[i, j]
 Base.ndims(::Type{FieldData{T,B}}) where {T,B} = ndims(T)
 Base.size(f::FieldData) = size(f.data)

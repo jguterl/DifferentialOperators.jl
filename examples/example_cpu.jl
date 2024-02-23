@@ -11,10 +11,10 @@ test_threads!(f, result) = compute_threads!(result, f, grid_data, 1+ig:nx-ig, 1+
 
 # First we create a grid 
 #grid_mhd = MHDGrid(nx, ny; L=[2π, 4π])
-coords = LogicalCoords(nx, ny; L=[2π, 4π])
+coords = LogicalCoords([nx, ny]; L=[2π, 4π])
 
 # We also define the data needed to calculated the derivatives (we can define order of accuracy here)
-grid_data = GridDerivatives(coords);
+grid_data = CoordSpacings(coords);
 
 dx = grid_data.dx.data[2, 2]
 dy = grid_data.dy.data[2, 2]
@@ -83,9 +83,9 @@ B = VectorField(coords);
 
 
 # Staggered coordss asuming half a grid point displacement
-coords⁺ˣ = LogicalCoords(nx, ny; L=[2π, 4π], d0=[0.5 * dx, 0])
-coords⁺ʸ = LogicalCoords(nx, ny; L=[2π, 4π], d0=[0.0, 0.5 * dy])
-coords⁺ᶻ = LogicalCoords(nx, ny; L=[2π, 4π], d0=[0.0, 0.0]) #Placehold for z grid
+coords⁺ˣ = LogicalCoords([nx, ny]; L=[2π, 4π], d0=[0.5 * dx, 0])
+coords⁺ʸ = LogicalCoords([nx, ny]; L=[2π, 4π], d0=[0.0, 0.5 * dy])
+coords⁺ᶻ = LogicalCoords([nx, ny]; L=[2π, 4π], d0=[0.0, 0.0]) #Placehold for z grid
 
 
 # This vector is defined using a FV like grid, with different location

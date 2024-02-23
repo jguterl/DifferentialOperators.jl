@@ -1,21 +1,24 @@
 export StructuredGrid
 
-struct StructuredGrid{G,D,I} <: AbstractStructuredGrid
-    grid      :: G
+struct StructuredGrid{C,G,D,I} <: AbstractStructuredGrid
+    Coords    :: C
+    Ghosts    :: G
     grid_data :: D
     indexes   :: I
 #    n         :: N #normal vector
 #    e         :: U #unitary vectors
 end
 
-function StructuredGrid(nx::Int64, ny::Int64; kw...)
-    return StructuredGrid((nx,ny); kw...)
+function StructuredGrid(npt::Array{Int64}; kw...)
+    return StructuredGrid(tuple(npt...); kw...)
 end
 
 function StructuredGrid(dims::NTuple{N,Int64}; kw...) where N
-    grid      = LogicalCoords(dims; kw...) 
+    Coords    = LogicalCoords(dims; kw...) 
+    grid_data = GridDerivatives(grid)
     indexes   = GridIndexes(dims; kw...)
-    grid_data = GridDerivatives(grid, indexes.ghost_cells)
+
+    #grid_data = GridDerivatives(grid, indexes.ghost_cells)
     #n         = NormalVectors(grid)
     #e         = UnitaryVectors(grid)
     StructuredGrid(grid, grid_data, indexes) #, n, e)
