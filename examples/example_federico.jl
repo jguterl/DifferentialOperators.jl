@@ -46,7 +46,7 @@ fyy = eval(build_function(∂yy_ψ₀, x, y))
 # Grid sizes
 Lx, Ly = 2π, 4π
 nx0, ny0 = 32, 64
-ng = 1
+ng  = [1, 1]
 ng2 = 2
 nreps = 6
 
@@ -62,31 +62,37 @@ for n = 1:nreps
     ny = ny0 * 2^(n - 1) # Number of interior points
 
     npts = [nx, ny]
-    intx = 1+ng:nx+ng
-    inty = 1+ng:ny+ng
-
-    intx2 = 1+ng2:nx+ng2
-    inty2 = 1+ng2:ny+ng2
-
+    #ng   = [ 1,  1]
+    L    = [Lx, Ly]
+    
     # First we create a grid that start at x=0 on the first interior point
-    local_coords = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.0, 0.0], ng=[1, 1])
+    full_grid = StructuredGrid( npts; L=L, Nghosts=ng, d0=[0.0, 0.0] )
+    local_coords = full_grid.Coords
+#    local_coords = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.0, 0.0], Nghosts=[1, 1])
 
     # We also define the data needed to calculated the derivatives (we can define order of accuracy here)
-    grid_data = CoordSpacings(local_coords)
+    grid_data = full_grid.Spacings
+#    grid_data = CoordSpacings(local_coords)
+
+    intx = full_grid.InteriorPoints[1] #1+ng:nx+ng
+    inty = full_grid.InteriorPoints[2] #1+ng:ny+ng
+
+#    intx2 = 1+ng2:nx+ng2
+#    inty2 = 1+ng2:ny+ng2
 
     dx = grid_data.dx.data[2, 2]
     dy = grid_data.dy.data[2, 2]
 
     # Staggered grids asuming half a grid point displacement
     # This is the standard finite volume grid for fluxes through faces
-    gridvˣ = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.5 * dx, 0], ng=[1, 1])
-    gridvʸ = LogicalCoords( npts ; L=[Lx, Lx], d0=[0.0, 0.5 * dy], ng=[1, 1])
-    gridvᶻ = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.0, 0.0], ng=[1, 1]) #Placehold for z grid
+    gridvˣ = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.5 * dx, 0], Nghosts=[1, 1])
+    gridvʸ = LogicalCoords( npts ; L=[Lx, Lx], d0=[0.0, 0.5 * dy], Nghosts=[1, 1])
+    gridvᶻ = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.0, 0.0], Nghosts=[1, 1]) #Placehold for z grid
 
     # This is the adjoint grid produced using curl(v) 
-    coordsbˣ = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.0, 0.5 * dy], ng=[1, 1]) # 0.5*dz
-    coordsbʸ = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.5 * dx, 0.0], ng=[1, 1]) # 0.5*dz
-    coordsbᶻ = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.5 * dx, 0.5 * dy], ng=[1, 1]) #Placehold for z grid
+    coordsbˣ = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.0, 0.5 * dy], Nghosts=[1, 1]) # 0.5*dz
+    coordsbʸ = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.5 * dx, 0.0], Nghosts=[1, 1]) # 0.5*dz
+    coordsbᶻ = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.5 * dx, 0.5 * dy], Nghosts=[1, 1]) #Placehold for z grid
 
     ψ = ScalarField(local_coords)
     @. ψ.field.data = cos(kx * local_coords.x) * cos(ky * local_coords.y)
@@ -111,7 +117,8 @@ for n = 1:nreps
     #Numerical solution
     f1_expr = ∇(ψ)
     v_num = VectorField(local_coords)
-    compute!(v_num, f1_expr, grid_data, intx, inty)
+    compute!(v_num, f1_expr, full_grid)
+#    compute!(v_num, f1_expr, grid_data, intx, inty)
 
     #Analytical solution
     @. v_ana.x.data = fx(local_coords.x, local_coords.y)
@@ -126,7 +133,8 @@ for n = 1:nreps
     #
     #Numerical solution
     f2_expr = ∇²(ψ)
-    compute!(s_num, f2_expr, grid_data, intx, inty)
+    compute!(s_num, f2_expr, full_grid)
+    #compute!(s_num, f2_expr, grid_data, intx, inty)
 
     #Analytical solution
     s_ana = ScalarField(local_coords)
@@ -141,7 +149,8 @@ for n = 1:nreps
     #Numerical solution
     f3_expr = ∇ × ∇(ψ)
     v_num = VectorField(local_coords)
-    compute!(v_num, f3_expr, grid_data, intx, inty)
+    compute!(v_num, f3_expr, full_grid)
+    #compute!(v_num, f3_expr, grid_data, intx, inty)
 
     #Analytical solution
     v_ana = VectorField(local_coords) #All zeros
@@ -154,7 +163,8 @@ for n = 1:nreps
     #    
     f4_expr = ∇ × V
     v_num = VectorField(local_coords)
-    compute!(v_num, f4_expr, grid_data, intx, inty)
+    compute!(v_num, f4_expr, full_grid)
+#    compute!(v_num, f4_expr, grid_data, intx, inty)
 
     #Analytical solution
     v_ana = VectorField(local_coords)
@@ -169,7 +179,8 @@ for n = 1:nreps
     #
     f5_expr = ∇ ⋅ (f4_expr)
     s_num = ScalarField(local_coords)
-    compute!(s_num, f5_expr, grid_data, intx, inty)
+    compute!(s_num, f5_expr, full_grid)
+#    compute!(s_num, f5_expr, grid_data, intx, inty)
 
     #Analytical solution
     s_ana = ScalarField(local_coords) # All zero from div(curl)
@@ -184,7 +195,8 @@ for n = 1:nreps
     #
     f6_expr = ∇⁺ × V
     v_num = VectorField(local_coords)
-    compute!(v_num, f6_expr, grid_data, intx, inty)
+    compute!(v_num, f6_expr, full_grid)
+#    compute!(v_num, f6_expr, grid_data, intx, inty)
 
     #Analytical solution
     v_ana = VectorField(local_coords)
@@ -196,7 +208,8 @@ for n = 1:nreps
     # Divergence of the curl
     f7_expr = ∇⁺ ⋅ (f6_expr)
     s_num = ScalarField(local_coords)
-    compute!(s_num, f7_expr, grid_data, intx, inty)
+    compute!(s_num, f7_expr, full_grid)
+#    compute!(s_num, f7_expr, grid_data, intx, inty)
 
     #Analytical solution
     s_ana = ScalarField(local_coords) # All zero
@@ -205,7 +218,8 @@ for n = 1:nreps
     #Curl of the curl (vector Laplacian)
     f8_expr = ∇⁻ × (∇⁺ × (V))
     v_num = VectorField(local_coords)
-    compute!(v_num, f8_expr, grid_data, intx, inty)
+    compute!(v_num, f8_expr, full_grid)
+#    compute!(v_num, f8_expr, grid_data, intx, inty)
 
     #Analytical solution
     v_ana = VectorField(local_coords)

@@ -12,11 +12,12 @@ Adapt.@adapt_structure DlData
 #(d::DlData)(i::Int64) = d.data[i]
 
 
-struct CoordSpacings{X<:CoordData,Y<:CoordData,Z<:CoordData,
+struct CoordSpacings{X<:CoordData,Y<:CoordData,Z<:CoordData,L<:CoordData,
                     DI<:DlData, DI2<:DlData, B} <: AbstractCoordSpacings{B}
     dx   :: X
     dy   :: Y
     dz   :: Z
+    dl   :: L
     dli  :: DI
     dli2 :: DI2
     backend :: B
@@ -27,17 +28,20 @@ end
 #
 #function CoordSpacings(coords::Grid, ghost_cells::GhostCells; Kx=1, Ky=1, Kz=1)
 function CoordSpacings(coords::LogicalCoords) #, ghost_cells::GhostCells; Kx=1, Ky=1, Kz=1)
-    dx = 0*coords.x .+ ( coords.x[2,1] - coords.x[1,1] ) #coords.x .- circshift(coords.x, (1, 0))
-    dy = 0*coords.y .+ ( coords.y[1,2].- coords.x[1,1] ) #coords.y .- circshift(coords.y, (0, 1))
+    dx = 0*coords.x .+ ( coords.x[2,1] .- coords.x[1,1] ) #coords.x .- circshift(coords.x, (1, 0))
+    dy = 0*coords.y .+ ( coords.y[1,2] .- coords.y[1,1] ) #coords.y .- circshift(coords.y, (0, 1))
+#    dx = 0*coords.x .+ Float64(1.0 ./ ( coords.x[2,1] .- coords.x[1,1] ) ) #coords.x .- circshift(coords.x, (1, 0))
+#    dy = 0*coords.y .+ Float64(1.0 ./ ( coords.y[1,2] .- coords.x[1,1] ) ) #coords.y .- circshift(coords.y, (0, 1))
     dz = missing
-    dli  = [1.0 / dx[1,1]   , 1.0 / dy[1,1]   , 0 ]
-    dli2 = [1.0 / dx[1,1]^2 , 1.0 / dy[1,1]^2 , 0 ]
+    dl = [ 1.0 ./ dx[1,1], 1.0 ./ dy[1,1], 0.0 ]
+    dli  = [1.0 ./ dx[1,1]   , 1.0 ./ dy[1,1]   , 0.0 ]
+    dli2 = [1.0 ./ dx[1,1]^2 , 1.0 ./ dy[1,1]^2 , 0.0 ]
 #    set_dx_ghost_cells!(dx, ghost_cells)
 #    set_dy_ghost_cells!(dy, ghost_cells)
-    CoordSpacings(CoordData(dx), CoordData(dy), CoordData(dz), DlData(dli), DlData(dli2))
+    CoordSpacings(CoordData(dx), CoordData(dy), CoordData(dz), CoordData(dl), DlData(dli), DlData(dli2))
 end
 
-CoordSpacings(x::AbstractCoordData{B}, y::AbstractCoordData{B}, z::AbstractCoordData{B}, dli::AbstractDlData{B}, dli2::AbstractDlData{B}) where {B<:Backend} = CoordSpacings(x,y,z,dli,dli2,B())
+CoordSpacings(x::AbstractCoordData{B}, y::AbstractCoordData{B}, z::AbstractCoordData{B}, dl::AbstractCoordData{B}, dli::AbstractDlData{B}, dli2::AbstractDlData{B}) where {B<:Backend} = CoordSpacings(x,y,z,dl,dli,dli2,B())
 
 #CoordSpacings(x::AbstractCoordData{B}, y::AbstractCoordData{B}, z::AbstractCoordData{B}, dli::Array{Float64}, dli2::Array{Float64}) where {B<:Backend} = CoordSpacings(x,y,z,dli,dli2,B())
 #

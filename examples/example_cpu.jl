@@ -6,7 +6,7 @@ set_backend!(:cpu)
 # Grid sizes
 nx, ny = 100, 100
 ig = 2
-test!(f, result) = compute!(result, f, grid_data, 1+ig:nx-ig, 1+ig:ny-ig)
+test!(f, result)         = compute!(result, f, grid_data, 1+ig:nx-ig, 1+ig:ny-ig)
 test_threads!(f, result) = compute_threads!(result, f, grid_data, 1+ig:nx-ig, 1+ig:ny-ig)
 
 # First we create a grid 
@@ -67,6 +67,13 @@ kz = 3;
 #res1 = ScalarField(1, 1)
 #f! = M ∻ v
 #compute!(f!, grid_data, res1, 1:1, 1:1)
+
+#
+# Compare against a simple FD written in loop form as sanity check
+#
+exp0 = ∇²(ψ)
+res0 = ScalarField(coords)
+@btime test!($exp0, $res0)
 
 #
 # ∇ψ in collocated grid
