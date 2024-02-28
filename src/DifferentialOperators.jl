@@ -1,18 +1,22 @@
 module DifferentialOperators
 
+using LoopVectorization
+
 include("Backends/backend.jl")
 export set_backend! #, check_backend!
 
+export CPUBackend, CUDABackend
 export Field, VectorField, ScalarField, TensorField
 
 export compute!, compute_turbo!, compute_threads!
 
-export LogicalCoords, CoordSpacings, CoordData
+export LogicalCoords, AbstractCoordSpacings, CoordSpacings, CoordData
 
 export StructuredGrid
 
-#export AbstractGrid
-#export AbstractStructuredGrid
+export AbstractGrid
+export AbstractStructuredGrid
+export AbstractDlData
 
 #
 # These likely need to be sent to their respective files
@@ -23,6 +27,7 @@ abstract type AbstractGrid end
 abstract type AbstractStructuredGrid end
 abstract type AbstractCoordSpacings{B<:Backend} end 
 abstract type AbstractCoordData{B<:Backend} end
+abstract type AbstractDlData{B<:Backend} end
 
 # data structures for dispatches purposes 
 abstract type Field end 
@@ -66,16 +71,16 @@ include("Operators/Operators.jl")
 # Pointwise evaluation of the operator for vectors and scalars
 #
 
-function compute_point!(s_out::ScalarField, op_in::ScalarField, grid_data::AbstractCoordSpacings, i::Index, j::Index)
-    #@inbounds v.field[i, j] = op.field(grid_data, i, j)
-    s_out.field[i, j] = op_in.field(grid_data, i, j)
+function compute_point!(s_out::ScalarField, op_in::ScalarField, GridSpacings::AbstractCoordSpacings, i::Index, j::Index)
+    #@inbounds v.field[i, j] = op.field(GridSpacings, i, j)
+    s_out.field.data[i, j] = op_in.field(GridSpacings, i, j)
     nothing
 end
 
-function compute_point!(v_out::VectorField, op_in::VectorField, grid_data::AbstractCoordSpacings, i::Index, j::Index)
-        v_out.x[i, j] = op_in.x(grid_data, i, j)
-        v_out.y[i, j] = op_in.y(grid_data, i, j)
-        v_out.z[i, j] = op_in.z(grid_data, i, j)
+function compute_point!(v_out::VectorField, op_in::VectorField, GridSpacings::AbstractCoordSpacings, i::Index, j::Index)
+        v_out.x[i, j] = op_in.x(GridSpacings, i, j)
+        v_out.y[i, j] = op_in.y(GridSpacings, i, j)
+        v_out.z[i, j] = op_in.z(GridSpacings, i, j)
     nothing
 end
 
@@ -86,60 +91,72 @@ end
 
 import CUDA: i32
 
-function compute!(v, op::Union{TensorField,ScalarField,VectorField}, grid_data::AbstractCoordSpacings{B}, i_::IndexIterator, j_::IndexIterator) where {B<:CUDABackend}
+function compute!(v, op::Union{TensorField,ScalarField,VectorField}, GridSpacings::AbstractCoordSpacings{B}, i_::IndexIterator, j_::IndexIterator) where {B<:CUDABackend}
     i = (blockIdx().x-1i32) * blockDim().x + threadIdx().x
     j = (blockIdx().y-1i32) * blockDim().y + threadIdx().y
     (i < i_.start || i> i_.stop || j < j_.start || j> j_.stop) && return
-    compute_point!(v, op, grid_data, i, j)
+    compute_point!(v, op, GridSpacings, i, j)
     nothing
 end
 
 #
 # CPU backend computation
 #
-function compute!(v, op, grid_data::AbstractCoordSpacings{B}, i_::IndexIterator, j_::IndexIterator) where {B<:CPUBackend}
-    compute!(v, op, grid_data, i_.start:i_.stop, j_.start:j_.stop)
+function compute!(v, op, StructuredGrid::AbstractStructuredGrid)
+    compute!(v, op, StructuredGrid.Spacings, StructuredGrid.InteriorPoints[1], StructuredGrid.InteriorPoints[2])
     return nothing
 end
 
-function compute!(v, op::Union{TensorField,ScalarField,VectorField}, grid_data::AbstractCoordSpacings{B}, i_::UnitRange, j_::UnitRange) where {B<:CPUBackend}
+function compute!(v, op, GridSpacings::AbstractCoordSpacings{B}, i_::IndexIterator, j_::IndexIterator) where {B<:CPUBackend}
+    compute!(v, op, GridSpacings, i_.start:i_.stop, j_.start:j_.stop)
+    return nothing
+end
+
+function compute!(v, op::Union{TensorField,ScalarField,VectorField}, GridSpacings::AbstractCoordSpacings{B}, i_::UnitRange, j_::UnitRange) where {B<:CPUBackend}
     for j in j_
         for i in i_
-            compute_point!(v, op, grid_data, i, j)
+            compute_point!(v, op, GridSpacings, i, j)
         end
     end
     nothing
 end
 
+
+
 #
 # Threaded computation -- eventually should be a backend
 #
-function compute_threads!(v, op, grid_data::AbstractCoordSpacings{B}, i_::IndexIterator, j_::IndexIterator) where {B<:CPUBackend}
-    compute_threads!(v, op, grid_data, i_.start:i_.stop, j_.start:j_.stop)
+function compute_threads!(v, op, StructuredGrid::AbstractStructuredGrid)
+    compute_threads!(v, op, StructuredGrid.GridSpacings, StructuredGrid.InteriorPoints[1], StructuredGrid.InteriorPoints[2])
     return nothing
 end
 
-function compute_threads!(v::VectorField, op::Union{TensorField,ScalarField,VectorField}, grid_data::AbstractCoordSpacings{B}, i_::UnitRange, j_::UnitRange) where {B<:CPUBackend}
+function compute_threads!(v, op, GridSpacings::AbstractCoordSpacings{B}, i_::IndexIterator, j_::IndexIterator) where {B<:CPUBackend}
+    compute_threads!(v, op, GridSpacings, i_.start:i_.stop, j_.start:j_.stop)
+    return nothing
+end
+
+function compute_threads!(v, op::Union{TensorField,ScalarField,VectorField}, GridSpacings::AbstractCoordSpacings{B}, i_::UnitRange, j_::UnitRange) where {B<:CPUBackend}
     Threads.@threads for j in j_
         for i in i_
-            compute_point!(v, op, grid_data, i, j)
+            compute_point!(v, op, GridSpacings, i, j)
         end
     end
     return nothing
 end
 
-# function compute!(grid_data::AbstractCoordSpacings{B}) where {B<:CUDABackend}
+# function compute!(GridSpacings::AbstractCoordSpacings{B}) where {B<:CUDABackend}
 #     i = (blockIdx().x - 1i32) * blockDim().x + threadIdx().x
 #     j = (blockIdx().y - 1i32) * blockDim().y + threadIdx().y
 #     #(i < i_.start || i> i._stop || j < j_.start || j> j._stop) && return
-#     #compute!(op, grid_data, v, i, j)
+#     #compute!(op, GridSpacings, v, i, j)
 #     nothing
 # end
 
-# function (op::VectorField{X,Y,Z})(grid_data::AbstractCoordSpacings, v::VectorField,  i::Int64, j::Int64)  where {X,Y,Z}
-#     v.x[i, j] = op.x(grid_data, i, j)
-#     v.y[i, j] = op.y(grid_data,i, j)
-#     v.z[i, j] = op.z(grid_data,i, j)
+# function (op::VectorField{X,Y,Z})(GridSpacings::AbstractCoordSpacings, v::VectorField,  i::Int64, j::Int64)  where {X,Y,Z}
+#     v.x[i, j] = op.x(GridSpacings, i, j)
+#     v.y[i, j] = op.y(GridSpacings, i, j)
+#     v.z[i, j] = op.z(GridSpacings, i, j)
 #     nothing
 # end
 

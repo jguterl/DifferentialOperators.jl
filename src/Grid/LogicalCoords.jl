@@ -18,11 +18,11 @@ end
 #       messing around with 57 constructors
 #
 
-function LogicalCoords(dims::NTuple{N,Int64}; L::Array{Float64}=[1.0 for i in 1:N], ng::Array{Int64}=[0 for i in 1:N], d0::Array{Float64}=[0.0 for i in 1:N], backend::Backend=current_backend.value) where {N}
+function LogicalCoords(dims::NTuple{N,Int64}; L::Array{Float64}=[1.0 for i in 1:N], Nghosts::Array{Int64}=[0 for i in 1:N], d0::Array{Float64}=[0.0 for i in 1:N], backend::Backend=current_backend.value) where {N}
     #
     # This line is incomprehensible --- break up into different readable lines
     #
-    return LogicalCoords(; (fn => get_grid_points(backend, i, dims, ng, d0, L) for ((i, d), fn) in zip(enumerate(dims), fieldnames(LogicalCoords)))...)
+    return LogicalCoords(; (fn => get_grid_points(backend, i, dims, Nghosts, d0, L) for ((i, d), fn) in zip(enumerate(dims), fieldnames(LogicalCoords)))...)
 end
 
 function LogicalCoords(npt::Array{Int64}; kw...)
@@ -32,8 +32,8 @@ end
 #
 # Coordinate grids are defined here
 #
-function _get_grid_points(i::Int64, npts, ng, d0, L)
-   return (d0[i] + L[i]) / (npts[i] - 1) * ( getindex.(collect(Iterators.product((1-ng[i]:d+ng[i] for d in npts)...)), i) .- 1 )
+function _get_grid_points(i::Int64, npts, Nghosts, d0, L)
+   return (d0[i] + L[i]) / (npts[i] - 1) * ( getindex.(collect(Iterators.product((1-Nghosts[i]:d+Nghosts[i] for d in npts)...)), i) .- 1 )
 end
 
 function get_grid_points(backend::CPUBackend , args..., )
@@ -51,7 +51,7 @@ Base.ones(coords::LogicalCoords)                    = ones(coords,current_backen
 Base.ones(coords::LogicalCoords, backend::Backend)  = backend(ones(size(coords.x)...))
 Base.zeros(coords::LogicalCoords)                   = zeros(coords, current_backend.value)
 Base.zeros(coords::LogicalCoords, backend::Backend) = backend(zeros(size(coords.x)...))
-Base.size(coords::LogicalCoords) = size(coords.x)
+Base.size(coords::LogicalCoords)                    = size(coords.x)
 
 const Grid1D{X}     = LogicalCoords{X,Missing,Missing}
 const Grid2D{X,Y}   = LogicalCoords{X,Y,Missing}

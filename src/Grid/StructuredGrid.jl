@@ -1,27 +1,38 @@
 export StructuredGrid
 
-struct StructuredGrid{C,G,D,I} <: AbstractStructuredGrid
+struct StructuredGrid{N,C,G,S,I,A} <: AbstractStructuredGrid
+    Ndims     :: N
     Coords    :: C
-    Ghosts    :: G
-    grid_data :: D
-    indexes   :: I
-#    n         :: N #normal vector
-#    e         :: U #unitary vectors
+    Nghosts   :: G
+    Spacings  :: S
+    InteriorPoints :: I
+    AllPoints :: A
+    
+##    Indexes   :: I
+##    n         :: N #normal vector
+##    e         :: U #unitary vectors
 end
 
 function StructuredGrid(npt::Array{Int64}; kw...)
     return StructuredGrid(tuple(npt...); kw...)
 end
 
-function StructuredGrid(dims::NTuple{N,Int64}; kw...) where N
-    Coords    = LogicalCoords(dims; kw...) 
-    grid_data = GridDerivatives(grid)
-    indexes   = GridIndexes(dims; kw...)
+function StructuredGrid(dims::NTuple{N,Int64}; Nghosts=[0 for i in 1:N], kw...) where N
 
-    #grid_data = GridDerivatives(grid, indexes.ghost_cells)
+    npt_tot   = collect(dims) .+ 2*Nghosts
+    
+    Ndims     = N
+    Coords    = LogicalCoords(dims; Nghosts=Nghosts, kw...)
+    Nghosts   = Nghosts
+    Spacings  = CoordSpacings(Coords)
+    InteriorPoints = [ IndexIterator(1,npt_tot[i],Nghosts[i]) for i=1:N ]
+    AllPoints      = [ IndexIterator(1,npt_tot[i],         0) for i=1:N ]
+    
+    #IndexIterators(IndexIterator(1,npt[1],ngc[1]
+    #Indexes   = GridIndexes(dims; ngc, kw...)
     #n         = NormalVectors(grid)
     #e         = UnitaryVectors(grid)
-    StructuredGrid(grid, grid_data, indexes) #, n, e)
+    StructuredGrid(Ndims, Coords, Nghosts, Spacings, InteriorPoints, AllPoints) #, n, e)
 end
 
 #
