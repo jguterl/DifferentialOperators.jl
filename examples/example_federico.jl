@@ -85,13 +85,13 @@ for n = 1:nreps
 
     # Staggered grids asuming half a grid point displacement
     # This is the standard finite volume grid for fluxes through faces
-    gridvˣ = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.5 * dx, 0], Nghosts=[1, 1])
-    gridvʸ = LogicalCoords( npts ; L=[Lx, Lx], d0=[0.0, 0.5 * dy], Nghosts=[1, 1])
-    gridvᶻ = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.0, 0.0], Nghosts=[1, 1]) #Placehold for z grid
+    gridvˣ = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.5 * dx, 0.0 * dy], Nghosts=[1, 1])
+    gridvʸ = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.0 * dx, 0.5 * dy], Nghosts=[1, 1])
+    gridvᶻ = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.0 * dx, 0.0 * dy], Nghosts=[1, 1]) #Placehold for z grid
 
     # This is the adjoint grid produced using curl(v) 
-    coordsbˣ = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.0, 0.5 * dy], Nghosts=[1, 1]) # 0.5*dz
-    coordsbʸ = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.5 * dx, 0.0], Nghosts=[1, 1]) # 0.5*dz
+    coordsbˣ = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.0 * dx, 0.5 * dy], Nghosts=[1, 1]) # 0.5*dz
+    coordsbʸ = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.5 * dx, 0.0 * dy], Nghosts=[1, 1]) # 0.5*dz
     coordsbᶻ = LogicalCoords( npts ; L=[Lx, Ly], d0=[0.5 * dx, 0.5 * dy], Nghosts=[1, 1]) #Placehold for z grid
 
     ψ = ScalarField(local_coords)
@@ -194,12 +194,17 @@ for n = 1:nreps
     # Eventually these should work also on _some_ of the "ghosts"
     #
     f6_expr = ∇⁺ × V
+    #    f6_expr = ∇⁺(ψ)
+    
     v_num = VectorField(local_coords)
     compute!(v_num, f6_expr, full_grid)
 #    compute!(v_num, f6_expr, grid_data, intx, inty)
 
     #Analytical solution
     v_ana = VectorField(local_coords)
+#    @. v_ana.x.data = fx(gridvˣ.x, gridvˣ.y)
+#    @. v_ana.y.data = fy(gridvʸ.x, gridvʸ.y)
+
     @. v_ana.x.data = +fy(coordsbˣ.x, coordsbˣ.y)
     @. v_ana.y.data = -fx(coordsbʸ.x, coordsbʸ.y)
 
