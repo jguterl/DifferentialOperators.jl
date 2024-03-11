@@ -71,6 +71,7 @@ kz = 3;
 #
 # Compare against a simple FD written in loop form as sanity check
 #
+print("Test ∇²(ψ)\n")
 exp0 = ∇²(ψ)
 res0 = ScalarField(coords)
 @btime test!($exp0, $res0)
@@ -127,6 +128,7 @@ print("Test η×∇×B\n")
 
 # Finally something useful...
 f4 = ∇⁻ × (η × (∇⁺ × B))
+#f4 = ∇⁻ × (∇⁺ × B)
 r4 = VectorField(coords)
 print("Test ∇⁻×η×∇⁺×B\n")
 @btime test!($f4, $r4)
