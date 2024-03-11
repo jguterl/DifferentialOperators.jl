@@ -91,6 +91,19 @@ end
 
 import CUDA: i32
 
+function compute!(v, op, GridSpacings::AbstractCoordSpacings{B}, i_::IndexIterator, j_::IndexIterator) where {B<:CUDABackend}
+    compute!(v, op, GridSpacings, i_.start:i_.stop, j_.start:j_.stop)
+    return nothing
+end
+
+function compute!(v, op::Union{TensorField,ScalarField,VectorField}, GridSpacings::AbstractCoordSpacings{B}, i_::UnitRange, j_::UnitRange) where {B<:CUDABackend}
+    i = (blockIdx().x-1i32) * blockDim().x + threadIdx().x
+    j = (blockIdx().y-1i32) * blockDim().y + threadIdx().y
+    (i < i_.start || i> i_.stop || j < j_.start || j> j_.stop) && return
+    compute_point!(v, op, GridSpacings, i, j)
+    nothing
+end
+
 function compute!(v, op::Union{TensorField,ScalarField,VectorField}, GridSpacings::AbstractCoordSpacings{B}, i_::IndexIterator, j_::IndexIterator) where {B<:CUDABackend}
     i = (blockIdx().x-1i32) * blockDim().x + threadIdx().x
     j = (blockIdx().y-1i32) * blockDim().y + threadIdx().y
